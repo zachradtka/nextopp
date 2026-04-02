@@ -69,6 +69,64 @@ AUTH_SECRET=your-random-secret  # Generate with: npx auth secret
 
 3. Restart the dev server.
 
+## Deploy to Vercel
+
+### 1. Create a Turso database
+
+```bash
+# Install the Turso CLI
+curl -sSfL https://get.tur.so/install.sh | bash
+
+# Sign up / log in
+turso auth login
+
+# Create a database
+turso db create opportunity-tracker
+
+# Get your credentials
+turso db show opportunity-tracker --url
+turso db tokens create opportunity-tracker
+```
+
+### 2. Push the schema to Turso
+
+```bash
+TURSO_DATABASE_URL=<your-url> TURSO_AUTH_TOKEN=<your-token> npm run db:push
+```
+
+### 3. Deploy on Vercel
+
+1. Go to [vercel.com](https://vercel.com), sign in, and click **Add New Project**
+2. Import your forked repository
+3. Add the following environment variables:
+
+| Variable | Value |
+|----------|-------|
+| `TURSO_DATABASE_URL` | Your Turso database URL |
+| `TURSO_AUTH_TOKEN` | Your Turso auth token |
+| `AUTH_DISABLED` | `true` (set to `false` to enable auth) |
+
+4. Click **Deploy**
+
+### 4. Enable authentication (optional)
+
+Once your app is deployed and you have your production URL:
+
+1. Create a GitHub OAuth App at [github.com/settings/developers](https://github.com/settings/developers)
+   - **Homepage URL**: your Vercel production URL (e.g. `https://your-app.vercel.app`)
+   - **Authorization callback URL**: `https://your-app.vercel.app/api/auth/callback/github`
+2. Add these environment variables in Vercel:
+
+| Variable | Value |
+|----------|-------|
+| `AUTH_DISABLED` | `false` |
+| `AUTH_GITHUB_ID` | Your GitHub OAuth client ID |
+| `AUTH_GITHUB_SECRET` | Your GitHub OAuth client secret |
+| `AUTH_SECRET` | Generate with `npx auth secret` |
+| `ALLOWED_USERS` | Comma-separated GitHub usernames (leave empty to allow all) |
+
+3. Redeploy from the Vercel dashboard
+
 ## Scripts
 
 | Command | Description |
