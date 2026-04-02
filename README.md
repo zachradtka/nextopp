@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Opportunity Tracker
+
+A simple web app to track job opportunities during your search. Keep tabs on where you've applied, interview status, salary ranges, notes, and more — all in one place.
+
+Built with Next.js, SQLite, and Tailwind CSS.
+
+## Features
+
+- Track opportunities with company, role, status, salary, location, and notes
+- Filter by status (Saved, Applied, Interviewing, Offered, Rejected, Withdrawn, Accepted)
+- Update status inline from the dashboard
+- Archive or delete opportunities you no longer need
+- Optional GitHub authentication
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- npm
+
+### Setup
+
+1. Clone the repo and install dependencies:
+
+```bash
+git clone <your-repo-url>
+cd opportunity-tracker
+npm install
+```
+
+2. Copy the example environment file:
+
+```bash
+cp .env.example .env.local
+```
+
+The default config (`AUTH_DISABLED=true`) lets you run locally with no additional setup.
+
+3. Set up the local database:
+
+```bash
+npm run db:push
+```
+
+4. Start the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and start tracking.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Authentication (Optional)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+By default, auth is disabled so you can use the app immediately. To enable GitHub OAuth:
 
-## Learn More
+1. Create a GitHub OAuth App at [github.com/settings/developers](https://github.com/settings/developers)
+   - Set the callback URL to `http://localhost:3000/api/auth/callback/github`
 
-To learn more about Next.js, take a look at the following resources:
+2. Update `.env.local`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+AUTH_DISABLED=false
+AUTH_GITHUB_ID=your-client-id
+AUTH_GITHUB_SECRET=your-client-secret
+AUTH_SECRET=your-random-secret  # Generate with: npx auth secret
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. Restart the dev server.
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run start` | Start production server |
+| `npm run db:push` | Push schema changes to the database |
+| `npm run db:generate` | Generate migration files |
+| `npm run db:studio` | Open Drizzle Studio to browse your data |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Tech Stack
+
+- [Next.js](https://nextjs.org) — React framework
+- [Drizzle ORM](https://orm.drizzle.team) — Type-safe database access
+- [SQLite](https://sqlite.org) / [Turso](https://turso.tech) — Database (local file for dev, Turso for production)
+- [Auth.js](https://authjs.dev) — Authentication
+- [Tailwind CSS](https://tailwindcss.com) + [shadcn/ui](https://ui.shadcn.com) — Styling and components
+
+## License
+
+MIT
