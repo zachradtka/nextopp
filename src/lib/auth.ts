@@ -15,33 +15,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async jwt({ token, profile }) {
       if (profile) {
-        // Sync user to database on sign-in
+        // Sync user to database on sign-in (upsert by ID)
         const now = new Date().toISOString();
-        const existing = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, token.sub!))
-          .limit(1);
-
-        if (existing.length === 0) {
-          await db.insert(users).values({
+        await db
+          .insert(users)
+          .values({
             id: token.sub!,
             name: (profile.name as string) ?? null,
             email: (profile.email as string) ?? "",
             image: (profile.avatar_url as string) ?? null,
             createdAt: now,
             updatedAt: now,
-          });
-        } else {
-          await db
-            .update(users)
-            .set({
-              name: (profile.name as string) ?? existing[0].name,
-              image: (profile.avatar_url as string) ?? existing[0].image,
+          })
+          .onConflictDoUpdate({
+            target: users.id,
+            set: {
+              name: (profile.name as string) ?? undefined,
+              email: (profile.email as string) ?? undefined,
+              image: (profile.avatar_url as string) ?? undefined,
               updatedAt: now,
-            })
-            .where(eq(users.id, token.sub!));
-        }
+            },
+          });
       }
       return token;
     },
