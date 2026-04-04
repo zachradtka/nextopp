@@ -2,7 +2,8 @@ import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { readFileSync } from "fs";
 import { nanoid } from "nanoid";
-import { opportunities } from "../src/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { opportunities, users, statusHistory } from "../src/lib/db/schema";
 
 const STATUS_MAP: Record<string, string> = {
   applied: "applied",
@@ -15,15 +16,19 @@ const STATUS_MAP: Record<string, string> = {
   saved: "saved",
 };
 
+const WORK_MODE_MAP: Record<string, string> = {
+  remote: "remote",
+  hybrid: "hybrid",
+  onsite: "onsite",
+  "on-site": "onsite",
+  "in-office": "onsite",
+  office: "onsite",
+};
+
 function parseDate(dateStr: string): string | null {
   if (!dateStr) return null;
   const [month, day, year] = dateStr.split("/");
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-}
-
-function parseLocation(workMode: string, details: string): string {
-  const parts = [workMode, details].filter(Boolean);
-  return parts.join(" - ") || "";
 }
 
 function parseCsvLine(line: string): string[] {
@@ -45,10 +50,36 @@ function parseCsvLine(line: string): string[] {
   return fields;
 }
 
+async function ensureUser(
+  db: ReturnType<typeof drizzle>,
+  userId: string,
+  email: string
+) {
+  const existing = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (existing.length === 0) {
+    const now = new Date().toISOString();
+    await db.insert(users).values({
+      id: userId,
+      email,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+}
+
 async function main() {
   const csvPath = process.argv[2];
-  if (!csvPath) {
-    console.error("Usage: npx tsx scripts/import-csv.ts <path-to-csv>");
+  const userId = process.argv[3];
+  if (!csvPath || !userId) {
+    console.error(
+      "Usage: npx tsx scripts/import-csv.ts <path-to-csv> <user-id>"
+    );
+    console.error("Example: npx tsx scripts/import-csv.ts data.csv local-dev-user");
     process.exit(1);
   }
 
@@ -60,6 +91,8 @@ async function main() {
   );
   const db = drizzle(client);
 
+  await ensureUser(db, userId, `${userId}@import`);
+
   const csv = readFileSync(csvPath, "utf-8");
   const lines = csv.split("\n").filter((l) => l.trim());
   const [_header, ...rows] = lines;
@@ -68,10 +101,19 @@ async function main() {
   let skipped = 0;
 
   for (const line of rows) {
-    const [applicationDate, company, role, workMode, locationDetails, status, jobUrl] =
-      parseCsvLine(line);
+    const [
+      applicationDate,
+      company,
+      role,
+      workMode,
+      locationDetails,
+      status,
+      jobUrl,
+    ] = parseCsvLine(line);
 
     const mappedStatus = STATUS_MAP[status.toLowerCase()] ?? "saved";
+    const mappedWorkMode =
+      WORK_MODE_MAP[workMode.toLowerCase()] ?? null;
     const now = new Date().toISOString();
 
     if (!company) {
@@ -79,24 +121,39 @@ async function main() {
       continue;
     }
 
+    const id = nanoid();
+
     await db.insert(opportunities).values({
-      id: nanoid(),
+      id,
+      userId,
       company,
       role: role || "Unknown Role",
       url: jobUrl || null,
       status: mappedStatus,
-      location: parseLocation(workMode, locationDetails) || null,
+      workMode: mappedWorkMode,
+      location: locationDetails || null,
       appliedAt: parseDate(applicationDate),
       createdAt: now,
       updatedAt: now,
       archived: 0,
     });
 
+    await db.insert(statusHistory).values({
+      id: nanoid(),
+      opportunityId: id,
+      status: mappedStatus,
+      changedAt: now,
+    });
+
     imported++;
-    console.log(`  Imported: ${company} - ${role || "Unknown Role"} (${mappedStatus})`);
+    console.log(
+      `  Imported: ${company} - ${role || "Unknown Role"} (${mappedStatus})`
+    );
   }
 
-  console.log(`\nDone! Imported ${imported} opportunities, skipped ${skipped}.`);
+  console.log(
+    `\nDone! Imported ${imported} opportunities, skipped ${skipped}.`
+  );
 }
 
 main().catch((err) => {

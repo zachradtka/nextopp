@@ -2,8 +2,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
-import { getOpportunity, archiveOpportunity, deleteOpportunity } from "@/lib/actions/opportunities";
-import type { Status } from "@/lib/constants";
+import {
+  getOpportunity,
+  getStatusHistory,
+  archiveOpportunity,
+  deleteOpportunity,
+} from "@/lib/actions/opportunities";
+import type { Status, WorkMode } from "@/lib/constants";
+import { STATUS_LABELS, STATUS_COLORS, WORK_MODE_LABELS } from "@/lib/constants";
 import { redirect } from "next/navigation";
 
 interface PageProps {
@@ -12,11 +18,23 @@ interface PageProps {
 
 export default async function OpportunityDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const opportunity = await getOpportunity(id);
+  const [opportunity, history] = await Promise.all([
+    getOpportunity(id),
+    getStatusHistory(id),
+  ]);
 
   if (!opportunity) {
     notFound();
   }
+
+  const locationDisplay = [
+    opportunity.workMode
+      ? WORK_MODE_LABELS[opportunity.workMode as WorkMode]
+      : null,
+    opportunity.location,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -32,10 +50,9 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-sm">
-        {opportunity.location && (
+        {locationDisplay && (
           <div>
-            <span className="font-medium">Location:</span>{" "}
-            {opportunity.location}
+            <span className="font-medium">Location:</span> {locationDisplay}
           </div>
         )}
         {opportunity.url && (
@@ -54,9 +71,11 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
         {(opportunity.salaryMin || opportunity.salaryMax) && (
           <div>
             <span className="font-medium">Salary:</span>{" "}
-            {opportunity.salaryMin && `$${opportunity.salaryMin.toLocaleString()}`}
+            {opportunity.salaryMin &&
+              `$${opportunity.salaryMin.toLocaleString()}`}
             {opportunity.salaryMin && opportunity.salaryMax && " - "}
-            {opportunity.salaryMax && `$${opportunity.salaryMax.toLocaleString()}`}
+            {opportunity.salaryMax &&
+              `$${opportunity.salaryMax.toLocaleString()}`}
           </div>
         )}
         {opportunity.appliedAt && (
@@ -79,6 +98,37 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">
             {opportunity.notes}
           </p>
+        </div>
+      )}
+
+      {history.length > 0 && (
+        <div>
+          <h2 className="font-medium mb-3">Status Timeline</h2>
+          <div className="space-y-3">
+            {history.map((entry) => (
+              <div key={entry.id} className="flex items-start gap-3 text-sm">
+                <div className="mt-0.5">
+                  <span
+                    className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[entry.status as Status] ?? "bg-gray-100 text-gray-800"}`}
+                  >
+                    {STATUS_LABELS[entry.status as Status] ?? entry.status}
+                  </span>
+                </div>
+                <div className="text-muted-foreground">
+                  {new Date(entry.changedAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                  {entry.note && (
+                    <span className="ml-2 text-foreground">{entry.note}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

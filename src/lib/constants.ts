@@ -29,3 +29,13 @@ export const STATUS_COLORS: Record<Status, string> = {
   withdrawn: "bg-orange-100 text-orange-800",
   accepted: "bg-emerald-100 text-emerald-800",
 };
+
+export const WORK_MODES = ["remote", "hybrid", "onsite"] as const;
+
+export type WorkMode = (typeof WORK_MODES)[number];
+
+export const WORK_MODE_LABELS: Record<WorkMode, string> = {
+  remote: "Remote",
+  hybrid: "Hybrid",
+  onsite: "On-site",
+};

@@ -37,6 +37,9 @@ yarn-error.log*
 # local database
 *.db
 
+# drizzle migrations (using db:push instead)
+/drizzle
+
 # vercel
 .vercel
 

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { STATUSES, STATUS_LABELS } from "@/lib/constants";
+import { STATUSES, STATUS_LABELS, WORK_MODES, WORK_MODE_LABELS } from "@/lib/constants";
 import { createOpportunity, updateOpportunity } from "@/lib/actions/opportunities";
 import type { Opportunity } from "@/lib/db/schema";
 
@@ -59,7 +59,7 @@ export function OpportunityForm({ opportunity }: OpportunityFormProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="status">Status</Label>
           <Select name="status" defaultValue={opportunity?.status ?? "saved"}>
@@ -76,12 +76,27 @@ export function OpportunityForm({ opportunity }: OpportunityFormProps) {
           </Select>
         </div>
         <div className="space-y-2">
+          <Label htmlFor="workMode">Work Mode</Label>
+          <Select name="workMode" defaultValue={opportunity?.workMode ?? ""}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select..." />
+            </SelectTrigger>
+            <SelectContent>
+              {WORK_MODES.map((wm) => (
+                <SelectItem key={wm} value={wm}>
+                  {WORK_MODE_LABELS[wm]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="location">Location</Label>
           <Input
             id="location"
             name="location"
             defaultValue={opportunity?.location ?? ""}
-            placeholder="Remote, NYC, etc."
+            placeholder="Austin, TX"
           />
         </div>
       </div>

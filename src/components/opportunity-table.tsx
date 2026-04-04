@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status-badge";
 import type { Opportunity } from "@/lib/db/schema";
-import type { Status } from "@/lib/constants";
+import type { Status, WorkMode } from "@/lib/constants";
+import { WORK_MODE_LABELS } from "@/lib/constants";
 
 interface OpportunityTableProps {
   opportunities: Opportunity[];
@@ -62,7 +63,12 @@ export function OpportunityTable({ opportunities }: OpportunityTableProps) {
                 />
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {opp.location ?? "—"}
+                {[
+                  opp.workMode ? WORK_MODE_LABELS[opp.workMode as WorkMode] : null,
+                  opp.location,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || "—"}
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {opp.appliedAt ?? "—"}
