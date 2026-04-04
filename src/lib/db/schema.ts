@@ -19,8 +19,7 @@ export const opportunities = sqliteTable(
   {
     id: text("id").primaryKey(),
     userId: text("user_id")
-      // TODO: re-enable after migration
-      // .notNull()
+      .notNull()
       .references(() => users.id),
     company: text("company").notNull(),
     role: text("role").notNull(),
