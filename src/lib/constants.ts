@@ -21,13 +21,13 @@ export const STATUS_LABELS: Record<Status, string> = {
 };
 
 export const STATUS_COLORS: Record<Status, string> = {
-  saved: "bg-gray-100 text-gray-800",
-  applied: "bg-blue-100 text-blue-800",
-  interviewing: "bg-yellow-100 text-yellow-800",
-  offered: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-  withdrawn: "bg-orange-100 text-orange-800",
-  accepted: "bg-emerald-100 text-emerald-800",
+  saved: "bg-[#F3F4F6] text-[#6B7280]",
+  applied: "bg-[#F3F4F6] text-[#6B7280]",
+  interviewing: "bg-[#FEF3C7] text-[#F59E0B]",
+  offered: "bg-[#D1FAE5] text-[#10B981]",
+  rejected: "bg-[#FEE2E2] text-[#EF4444]",
+  withdrawn: "bg-[#FEF3C7] text-[#D97706]",
+  accepted: "bg-[#D1FAE5] text-[#059669]",
 };
 
 export const WORK_MODES = ["remote", "hybrid", "onsite"] as const;

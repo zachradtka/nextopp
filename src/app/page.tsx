@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OpportunityTable } from "@/components/opportunity-table";
 import { StatusFilter } from "@/components/status-filter";
@@ -18,17 +19,36 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Opportunities</h1>
+      {/* Breadcrumb */}
+      <nav className="text-sm text-[#9CA3AF]">
+        <span>Portfolio</span>
+        <span className="mx-1.5">&rsaquo;</span>
+        <span className="text-primary font-medium">Applications</span>
+      </nav>
+
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-[1.875rem] font-bold tracking-[-0.025em] text-[#111827]">Applications</h1>
+          <p className="hidden sm:block text-sm font-medium text-[#4B5563] mt-1">
+            Track and manage your professional journey through active
+            opportunities and historical records.
+          </p>
+        </div>
         <Link href="/opportunities/new">
-          <Button>Add Opportunity</Button>
+          <Button className="gap-1.5">
+            <Plus className="size-4" />
+            Add Opportunity
+          </Button>
         </Link>
       </div>
 
+      {/* Filters */}
       <Suspense>
         <StatusFilter />
       </Suspense>
 
+      {/* Table */}
       <OpportunityTable opportunities={opportunities} />
     </div>
   );

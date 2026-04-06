@@ -1,6 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  MoreHorizontal,
+  Eye,
+  Pencil,
+  Archive,
+  Trash2,
+  Calendar,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -9,16 +18,156 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/status-badge";
+import {
+  archiveOpportunity,
+  deleteOpportunity,
+} from "@/lib/actions/opportunities";
 import type { Opportunity } from "@/lib/db/schema";
-import type { Status, WorkMode } from "@/lib/constants";
-import { WORK_MODE_LABELS } from "@/lib/constants";
+import type { Status } from "@/lib/constants";
 
 interface OpportunityTableProps {
   opportunities: Opportunity[];
 }
 
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatShortDate(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatRelativeDate(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return `${weeks} ${weeks === 1 ? "week" : "weeks"} ago`;
+  }
+  return formatDate(dateStr);
+}
+
+function ActionsMenu({
+  opportunityId,
+  router,
+}: {
+  opportunityId: string;
+  router: ReturnType<typeof useRouter>;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="p-1 rounded-md hover:bg-accent cursor-pointer">
+        <MoreHorizontal className="size-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={() => router.push(`/opportunities/${opportunityId}`)}
+        >
+          <Eye className="size-4 mr-2" />
+          View
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() =>
+            router.push(`/opportunities/${opportunityId}/edit`)
+          }
+        >
+          <Pencil className="size-4 mr-2" />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => archiveOpportunity(opportunityId)}
+        >
+          <Archive className="size-4 mr-2" />
+          Archive
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-destructive"
+          onClick={() => deleteOpportunity(opportunityId)}
+        >
+          <Trash2 className="size-4 mr-2" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function MobileCard({
+  opp,
+  router,
+}: {
+  opp: Opportunity;
+  router: ReturnType<typeof useRouter>;
+}) {
+  return (
+    <div className="bg-card rounded-lg border border-[#E5E7EB] p-4">
+      {/* Top row: Role + Status + Actions */}
+      <div className="flex items-start justify-between gap-2">
+        <Link
+          href={`/opportunities/${opp.id}`}
+          className="flex-1 min-w-0"
+        >
+          <div className="text-[0.9375rem] font-bold text-[#111827] leading-snug">
+            {opp.role}
+          </div>
+          <div className="text-sm font-medium text-[#4B5563] mt-0.5">
+            {opp.company}
+          </div>
+        </Link>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <StatusBadge
+            status={opp.status as Status}
+            opportunityId={opp.id}
+          />
+          <ActionsMenu opportunityId={opp.id} router={router} />
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-[#E5E7EB] my-3" />
+
+      {/* Bottom row: Applied date + relative time */}
+      <div className="flex items-center justify-between text-[0.8125rem] font-medium text-[#4B5563]">
+        <div className="flex items-center gap-1.5">
+          <Calendar className="size-3.5 text-[#9CA3AF]" />
+          <span>Applied {formatShortDate(opp.appliedAt)}</span>
+        </div>
+        <span className="text-[#9CA3AF]">
+          {formatRelativeDate(opp.updatedAt)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function OpportunityTable({ opportunities }: OpportunityTableProps) {
+  const router = useRouter();
+
   if (opportunities.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -33,50 +182,62 @@ export function OpportunityTable({ opportunities }: OpportunityTableProps) {
   }
 
   return (
-    <div className="border rounded-lg">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Company</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Applied</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {opportunities.map((opp) => (
-            <TableRow key={opp.id}>
-              <TableCell className="font-medium">
-                <Link
-                  href={`/opportunities/${opp.id}`}
-                  className="hover:underline"
-                >
-                  {opp.company}
-                </Link>
-              </TableCell>
-              <TableCell>{opp.role}</TableCell>
-              <TableCell>
-                <StatusBadge
-                  status={opp.status as Status}
-                  opportunityId={opp.id}
-                />
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {[
-                  opp.workMode ? WORK_MODE_LABELS[opp.workMode as WorkMode] : null,
-                  opp.location,
-                ]
-                  .filter(Boolean)
-                  .join(" · ") || "—"}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {opp.appliedAt ?? "—"}
-              </TableCell>
+    <>
+      {/* Mobile: Card list */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {opportunities.map((opp) => (
+          <MobileCard key={opp.id} opp={opp} router={router} />
+        ))}
+      </div>
+
+      {/* Desktop: Table */}
+      <div className="hidden md:block bg-card border rounded-lg">
+        <Table>
+          <TableHeader className="bg-[#F9FAFB]">
+            <TableRow className="hover:bg-transparent border-b border-[#E5E7EB]">
+              <TableHead>Company & Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Applied Date</TableHead>
+              <TableHead>Last Contact</TableHead>
+              <TableHead className="w-12">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {opportunities.map((opp) => (
+              <TableRow key={opp.id}>
+                <TableCell className="py-4">
+                  <Link
+                    href={`/opportunities/${opp.id}`}
+                    className="hover:underline"
+                  >
+                    <div className="text-sm font-semibold text-[#111827]">
+                      {opp.company}
+                    </div>
+                    <div className="text-sm font-medium text-[#4B5563]">
+                      {opp.role}
+                    </div>
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <StatusBadge
+                    status={opp.status as Status}
+                    opportunityId={opp.id}
+                  />
+                </TableCell>
+                <TableCell className="text-sm font-medium text-[#4B5563]">
+                  {formatDate(opp.appliedAt)}
+                </TableCell>
+                <TableCell className="text-sm font-medium text-[#4B5563]">
+                  {formatRelativeDate(opp.updatedAt)}
+                </TableCell>
+                <TableCell>
+                  <ActionsMenu opportunityId={opp.id} router={router} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }

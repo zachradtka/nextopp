@@ -1,0 +1,29 @@
+Application Date,Company,Role,Work Mode,Location,Status,Job URL
+1/15/2026,Stripe,Senior Software Engineer,Remote,San Francisco CA,Applied,https://stripe.com/jobs/1234
+1/18/2026,Datadog,Staff Frontend Engineer,Hybrid,New York NY,Interviewing,https://careers.datadoghq.com/5678
+1/22/2026,Vercel,Full Stack Developer,Remote,,Applied,https://vercel.com/careers/9012
+1/25/2026,Cloudflare,Systems Engineer,Remote,Austin TX,Rejected,https://cloudflare.com/careers/3456
+2/01/2026,Figma,Senior Product Designer,Hybrid,San Francisco CA,Offered,https://figma.com/careers/7890
+2/03/2026,Linear,Software Engineer,Remote,,Interviewing,https://linear.app/careers/2345
+2/07/2026,Notion,Backend Engineer,Hybrid,New York NY,Applied,https://notion.so/careers/6789
+2/10/2026,Supabase,Developer Advocate,Remote,,Withdrawn,https://supabase.com/careers/0123
+2/14/2026,Planetscale,Database Engineer,Remote,,Rejected,https://planetscale.com/careers/4567
+2/18/2026,Retool,Frontend Engineer,Onsite,San Francisco CA,Interviewing,https://retool.com/careers/8901
+2/20/2026,Fly.io,Infrastructure Engineer,Remote,,Applied,https://fly.io/jobs/2345
+2/24/2026,Railway,Platform Engineer,Remote,,Saved,https://railway.app/careers/6789
+2/28/2026,Render,Site Reliability Engineer,Remote,,Applied,https://render.com/careers/0123
+3/02/2026,Tailwind Labs,UI Engineer,Remote,,Interviewing,https://tailwindcss.com/careers/4567
+3/05/2026,Prisma,Software Engineer,Remote,Berlin Germany,Rejected,https://prisma.io/careers/8901
+3/08/2026,Neon,Database Engineer,Remote,,Applied,https://neon.tech/careers/2345
+3/10/2026,Deno,Runtime Engineer,Remote,,Saved,https://deno.com/careers/6789
+3/12/2026,Turso,Backend Engineer,Remote,,Applied,https://turso.tech/careers/0123
+3/15/2026,Resend,Full Stack Engineer,Remote,,Interviewing,https://resend.com/careers/4567
+3/18/2026,Clerk,Senior Frontend Engineer,Remote,,Offered,https://clerk.com/careers/8901
+3/20/2026,Convex,Systems Engineer,Remote,,Applied,https://convex.dev/careers/2345
+3/22/2026,Upstash,Software Engineer,Remote,,Saved,https://upstash.com/careers/6789
+3/25/2026,Axiom,Observability Engineer,Remote,New York NY,Interviewing,https://axiom.co/careers/0123
+3/27/2026,Grafana Labs,Senior Software Engineer,Hybrid,Chicago IL,Applied,https://grafana.com/careers/4567
+3/30/2026,HashiCorp,Platform Engineer,Remote,,Rejected,https://hashicorp.com/careers/8901
+4/01/2026,Temporal,Distributed Systems Engineer,Remote,,Applied,https://temporal.io/careers/2345
+4/03/2026,CockroachDB,Database Engineer,Remote,New York NY,Interviewing,https://cockroachlabs.com/careers/6789
+4/05/2026,Sourcegraph,Software Engineer,Remote,,Accepted,https://sourcegraph.com/careers/0123

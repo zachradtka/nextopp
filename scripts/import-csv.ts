@@ -8,6 +8,7 @@ import { opportunities, users, statusHistory } from "../src/lib/db/schema";
 const STATUS_MAP: Record<string, string> = {
   applied: "applied",
   "initial screen": "interviewing",
+  interviewing: "interviewing",
   declined: "rejected",
   rejected: "rejected",
   offered: "offered",
