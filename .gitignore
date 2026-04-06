@@ -40,6 +40,9 @@ yarn-error.log*
 # drizzle migrations (using db:push instead)
 /drizzle
 
+# claude code
+.claude/
+
 # vercel
 .vercel
 
