@@ -24,7 +24,7 @@ export function StatusBadge({
   const badge = (
     <Badge
       variant="outline"
-      className={`${STATUS_COLORS[status]} border-0 cursor-pointer`}
+      className={`${STATUS_COLORS[status]} border-0 cursor-pointer text-[0.75rem] uppercase tracking-wide font-bold`}
     >
       {STATUS_LABELS[status]}
     </Badge>

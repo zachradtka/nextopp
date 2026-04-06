@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
+import { Manrope, Geist_Mono } from "next/font/google";
 import { getOptionalSession, isAuthEnabled } from "@/lib/auth-optional";
-import { signOut } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
+import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const manrope = Manrope({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
@@ -31,36 +29,15 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <header className="border-b">
-          <div className="container mx-auto px-4 h-14 flex items-center justify-between">
-            <Link href="/" className="font-semibold text-lg">
-              Opportunity Tracker
-            </Link>
-            <div className="flex items-center gap-4">
-              {session?.user && (
-                <span className="text-sm text-muted-foreground">
-                  {session.user.name ?? session.user.email}
-                </span>
-              )}
-              {isAuthEnabled() && session?.user && (
-                <form
-                  action={async () => {
-                    "use server";
-                    await signOut();
-                  }}
-                >
-                  <Button variant="outline" size="sm" type="submit">
-                    Sign out
-                  </Button>
-                </form>
-              )}
-            </div>
-          </div>
-        </header>
-        <main className="flex-1 container mx-auto px-4 py-8">{children}</main>
+      <body className="h-full overflow-hidden">
+        <AppShell
+          user={session?.user ?? null}
+          authEnabled={isAuthEnabled()}
+        >
+          {children}
+        </AppShell>
       </body>
     </html>
   );

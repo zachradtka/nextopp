@@ -127,6 +127,38 @@ Once your app is deployed and you have your production URL:
 
 3. Redeploy from the Vercel dashboard
 
+## Sample Data
+
+To load sample data for local development:
+
+```bash
+npm run import -- scripts/sample-data.csv local-dev-user
+```
+
+This imports 28 opportunities with a mix of statuses, dates, and companies. You can re-run it after resetting the database if you want a fresh start:
+
+```bash
+rm local.db
+npm run db:push
+npm run import -- scripts/sample-data.csv local-dev-user
+```
+
+To import your own data, create a CSV with these columns:
+
+```
+Application Date,Company,Role,Work Mode,Location,Status,Job URL
+```
+
+- **Application Date**: `MM/DD/YYYY` format
+- **Status**: `saved`, `applied`, `interviewing`, `offered`, `rejected`, `withdrawn`, or `accepted`
+- **Work Mode**: `remote`, `hybrid`, or `onsite`
+
+Then run:
+
+```bash
+npm run import -- path/to/your-data.csv local-dev-user
+```
+
 ## Scripts
 
 | Command | Description |
@@ -137,6 +169,7 @@ Once your app is deployed and you have your production URL:
 | `npm run db:push` | Push schema changes to the database |
 | `npm run db:generate` | Generate migration files |
 | `npm run db:studio` | Open Drizzle Studio to browse your data |
+| `npm run import -- <csv> <user-id>` | Import opportunities from a CSV file |
 
 ## Tech Stack
 
