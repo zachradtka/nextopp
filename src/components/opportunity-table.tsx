@@ -125,17 +125,17 @@ function MobileCard({
   router: ReturnType<typeof useRouter>;
 }) {
   return (
-    <div className="bg-card rounded-lg border border-[#E5E7EB] p-4">
+    <div className="bg-card rounded-lg border border-border p-4">
       {/* Top row: Role + Status + Actions */}
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/opportunities/${opp.id}`}
           className="flex-1 min-w-0"
         >
-          <div className="text-[0.9375rem] font-bold text-[#111827] leading-snug">
+          <div className="text-[0.9375rem] font-bold text-foreground leading-snug">
             {opp.role}
           </div>
-          <div className="text-sm font-medium text-[#4B5563] mt-0.5">
+          <div className="text-sm font-medium text-muted-foreground mt-0.5">
             {opp.company}
           </div>
         </Link>
@@ -149,15 +149,15 @@ function MobileCard({
       </div>
 
       {/* Divider */}
-      <div className="border-t border-[#E5E7EB] my-3" />
+      <div className="border-t border-border my-3" />
 
       {/* Bottom row: Applied date + relative time */}
-      <div className="flex items-center justify-between text-[0.8125rem] font-medium text-[#4B5563]">
+      <div className="flex items-center justify-between text-[0.8125rem] font-medium text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <Calendar className="size-3.5 text-[#9CA3AF]" />
+          <Calendar className="size-3.5 text-muted-foreground" />
           <span>Applied {formatShortDate(opp.appliedAt)}</span>
         </div>
-        <span className="text-[#9CA3AF]">
+        <span className="text-muted-foreground">
           {formatRelativeDate(opp.updatedAt)}
         </span>
       </div>
@@ -193,8 +193,8 @@ export function OpportunityTable({ opportunities }: OpportunityTableProps) {
       {/* Desktop: Table */}
       <div className="hidden md:block bg-card border rounded-lg">
         <Table>
-          <TableHeader className="bg-[#F9FAFB]">
-            <TableRow className="hover:bg-transparent border-b border-[#E5E7EB]">
+          <TableHeader className="bg-background">
+            <TableRow className="hover:bg-transparent border-b border-border">
               <TableHead>Company & Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Applied Date</TableHead>
@@ -210,10 +210,10 @@ export function OpportunityTable({ opportunities }: OpportunityTableProps) {
                     href={`/opportunities/${opp.id}`}
                     className="hover:underline"
                   >
-                    <div className="text-sm font-semibold text-[#111827]">
+                    <div className="text-sm font-semibold text-foreground">
                       {opp.company}
                     </div>
-                    <div className="text-sm font-medium text-[#4B5563]">
+                    <div className="text-sm font-medium text-muted-foreground">
                       {opp.role}
                     </div>
                   </Link>
@@ -224,10 +224,10 @@ export function OpportunityTable({ opportunities }: OpportunityTableProps) {
                     opportunityId={opp.id}
                   />
                 </TableCell>
-                <TableCell className="text-sm font-medium text-[#4B5563]">
+                <TableCell className="text-sm font-medium text-muted-foreground">
                   {formatDate(opp.appliedAt)}
                 </TableCell>
-                <TableCell className="text-sm font-medium text-[#4B5563]">
+                <TableCell className="text-sm font-medium text-muted-foreground">
                   {formatRelativeDate(opp.updatedAt)}
                 </TableCell>
                 <TableCell>

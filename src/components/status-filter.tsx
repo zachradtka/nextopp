@@ -36,7 +36,7 @@ export function StatusFilter() {
             className={`rounded-full shrink-0 font-semibold tracking-[0.025em] ${
               current === f.value
                 ? "shadow-md"
-                : "text-[#4B5563]"
+                : "text-muted-foreground"
             }`}
             onClick={() => setFilter(f.value)}
           >
@@ -47,7 +47,7 @@ export function StatusFilter() {
       <Button
         variant="secondary"
         size="sm"
-        className="rounded-full shrink-0 gap-1.5 font-semibold tracking-[0.025em] text-[#4B5563]"
+        className="rounded-full shrink-0 gap-1.5 font-semibold tracking-[0.025em] text-muted-foreground"
         disabled
       >
         <SlidersHorizontal className="size-3.5" />

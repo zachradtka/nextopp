@@ -69,7 +69,7 @@ export function TopBar({ user, onMobileMenuClick }: TopBarProps) {
         {user && (
           <div className="flex items-center gap-2">
             <UserAvatar user={user} />
-            <span className="hidden sm:block text-sm font-semibold text-[#111827]">
+            <span className="hidden sm:block text-sm font-semibold text-foreground">
               {user.name ?? user.email}
             </span>
           </div>
