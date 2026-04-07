@@ -7,6 +7,7 @@ import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 import type { Status } from "@/lib/constants";
 import { requireUserId } from "@/lib/auth-optional";
+import { parseFormData, type OpportunityFormState } from "@/lib/validations/opportunity";
 
 async function recordStatusChange(
   opportunityId: string,
@@ -63,42 +64,70 @@ export async function getStatusHistory(opportunityId: string) {
     .orderBy(desc(statusHistory.changedAt));
 }
 
-export async function createOpportunity(formData: FormData) {
+export async function createOpportunity(
+  prevState: OpportunityFormState,
+  formData: FormData
+): Promise<OpportunityFormState & { id?: string }> {
   const userId = await requireUserId();
+  const result = parseFormData(formData);
+
+  if (!result.success) {
+    return {
+      errors: result.error.flatten().fieldErrors as OpportunityFormState["errors"],
+      message: "Validation failed. Please check the form for errors.",
+    };
+  }
+
+  const data = result.data;
   const id = nanoid();
   const now = new Date().toISOString();
-  const status = (formData.get("status") as string) || "saved";
 
   await db.insert(opportunities).values({
     id,
     userId,
-    company: formData.get("company") as string,
-    role: formData.get("role") as string,
-    url: (formData.get("url") as string) || null,
-    status,
-    salaryMin: formData.get("salaryMin")
-      ? Number(formData.get("salaryMin"))
-      : null,
-    salaryMax: formData.get("salaryMax")
-      ? Number(formData.get("salaryMax"))
-      : null,
-    workMode: (formData.get("workMode") as string) || null,
-    location: (formData.get("location") as string) || null,
-    notes: (formData.get("notes") as string) || null,
-    appliedAt: (formData.get("appliedAt") as string) || null,
+    company: data.company,
+    role: data.role,
+    url: data.url,
+    status: data.status,
+    salaryMin: data.salaryMin,
+    salaryMax: data.salaryMax,
+    workMode: data.workMode,
+    location: data.location,
+    department: data.department,
+    employmentType: data.employmentType,
+    experienceLevel: data.experienceLevel,
+    jobId: data.jobId,
+    datePosted: data.datePosted,
+    contactName: data.contactName,
+    jobDescription: data.jobDescription,
+    notes: data.notes,
+    appliedAt: data.appliedAt,
     createdAt: now,
     updatedAt: now,
   });
 
-  await recordStatusChange(id, status);
+  await recordStatusChange(id, data.status);
 
   revalidatePath("/");
   return { id };
 }
 
-export async function updateOpportunity(id: string, formData: FormData) {
+export async function updateOpportunity(
+  id: string,
+  prevState: OpportunityFormState,
+  formData: FormData
+): Promise<OpportunityFormState> {
   const userId = await requireUserId();
-  const newStatus = (formData.get("status") as string) || "saved";
+  const result = parseFormData(formData);
+
+  if (!result.success) {
+    return {
+      errors: result.error.flatten().fieldErrors as OpportunityFormState["errors"],
+      message: "Validation failed. Please check the form for errors.",
+    };
+  }
+
+  const data = result.data;
 
   // Check if status changed
   const existing = await db
@@ -110,31 +139,35 @@ export async function updateOpportunity(id: string, formData: FormData) {
   await db
     .update(opportunities)
     .set({
-      company: formData.get("company") as string,
-      role: formData.get("role") as string,
-      url: (formData.get("url") as string) || null,
-      status: newStatus,
-      salaryMin: formData.get("salaryMin")
-        ? Number(formData.get("salaryMin"))
-        : null,
-      salaryMax: formData.get("salaryMax")
-        ? Number(formData.get("salaryMax"))
-        : null,
-      workMode: (formData.get("workMode") as string) || null,
-      location: (formData.get("location") as string) || null,
-      notes: (formData.get("notes") as string) || null,
-      appliedAt: (formData.get("appliedAt") as string) || null,
-      respondedAt: (formData.get("respondedAt") as string) || null,
+      company: data.company,
+      role: data.role,
+      url: data.url,
+      status: data.status,
+      salaryMin: data.salaryMin,
+      salaryMax: data.salaryMax,
+      workMode: data.workMode,
+      location: data.location,
+      department: data.department,
+      employmentType: data.employmentType,
+      experienceLevel: data.experienceLevel,
+      jobId: data.jobId,
+      datePosted: data.datePosted,
+      contactName: data.contactName,
+      jobDescription: data.jobDescription,
+      notes: data.notes,
+      appliedAt: data.appliedAt,
+      respondedAt: data.respondedAt,
       updatedAt: new Date().toISOString(),
     })
     .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)));
 
-  if (existing[0] && existing[0].status !== newStatus) {
-    await recordStatusChange(id, newStatus);
+  if (existing[0] && existing[0].status !== data.status) {
+    await recordStatusChange(id, data.status);
   }
 
   revalidatePath("/");
   revalidatePath(`/opportunities/${id}`);
+  return {};
 }
 
 export async function updateOpportunityStatus(id: string, status: Status) {

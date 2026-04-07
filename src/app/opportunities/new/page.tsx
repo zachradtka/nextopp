@@ -11,9 +11,9 @@ export default function NewOpportunityPage() {
           Applications
         </Link>
         <span className="mx-1.5">&rsaquo;</span>
-        <span className="text-foreground font-medium">New</span>
+        <span className="text-foreground font-medium">Create Opportunity</span>
       </nav>
-      <h1 className="text-2xl font-bold">Add Opportunity</h1>
+      <h1 className="text-2xl font-bold">Create Opportunity</h1>
       <OpportunityForm />
     </div>
   );
