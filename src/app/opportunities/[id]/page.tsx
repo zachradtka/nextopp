@@ -8,8 +8,14 @@ import {
   archiveOpportunity,
   deleteOpportunity,
 } from "@/lib/actions/opportunities";
-import type { Status, WorkMode } from "@/lib/constants";
-import { STATUS_LABELS, STATUS_COLORS, WORK_MODE_LABELS } from "@/lib/constants";
+import type { Status, WorkMode, EmploymentType, ExperienceLevel } from "@/lib/constants";
+import {
+  STATUS_LABELS,
+  STATUS_COLORS,
+  WORK_MODE_LABELS,
+  EMPLOYMENT_TYPE_LABELS,
+  EXPERIENCE_LEVEL_LABELS,
+} from "@/lib/constants";
 import { redirect } from "next/navigation";
 
 interface PageProps {
@@ -67,6 +73,29 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
             <span className="font-medium">Location:</span> {locationDisplay}
           </div>
         )}
+        {opportunity.department && (
+          <div>
+            <span className="font-medium">Department:</span>{" "}
+            {opportunity.department}
+          </div>
+        )}
+        {opportunity.employmentType && (
+          <div>
+            <span className="font-medium">Employment Type:</span>{" "}
+            {EMPLOYMENT_TYPE_LABELS[opportunity.employmentType as EmploymentType] ?? opportunity.employmentType}
+          </div>
+        )}
+        {opportunity.experienceLevel && (
+          <div>
+            <span className="font-medium">Experience Level:</span>{" "}
+            {EXPERIENCE_LEVEL_LABELS[opportunity.experienceLevel as ExperienceLevel] ?? opportunity.experienceLevel}
+          </div>
+        )}
+        {opportunity.jobId && (
+          <div>
+            <span className="font-medium">Job ID:</span> {opportunity.jobId}
+          </div>
+        )}
         {opportunity.url && (
           <div>
             <span className="font-medium">Posting:</span>{" "}
@@ -90,6 +119,18 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
               `$${opportunity.salaryMax.toLocaleString()}`}
           </div>
         )}
+        {opportunity.contactName && (
+          <div>
+            <span className="font-medium">Contact:</span>{" "}
+            {opportunity.contactName}
+          </div>
+        )}
+        {opportunity.datePosted && (
+          <div>
+            <span className="font-medium">Date Posted:</span>{" "}
+            {opportunity.datePosted}
+          </div>
+        )}
         {opportunity.appliedAt && (
           <div>
             <span className="font-medium">Applied:</span>{" "}
@@ -103,6 +144,15 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
           </div>
         )}
       </div>
+
+      {opportunity.jobDescription && (
+        <div>
+          <h2 className="font-medium mb-2">Job Description</h2>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+            {opportunity.jobDescription}
+          </p>
+        </div>
+      )}
 
       {opportunity.notes && (
         <div>

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OpportunityTable } from "@/components/opportunity-table";
 import { StatusFilter } from "@/components/status-filter";
@@ -36,9 +35,8 @@ export default async function HomePage({ searchParams }: PageProps) {
           </p>
         </div>
         <Link href="/opportunities/new">
-          <Button className="gap-1.5">
-            <Plus className="size-4" />
-            Add Opportunity
+          <Button>
+            Create
           </Button>
         </Link>
       </div>

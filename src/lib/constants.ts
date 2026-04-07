@@ -39,3 +39,39 @@ export const WORK_MODE_LABELS: Record<WorkMode, string> = {
   hybrid: "Hybrid",
   onsite: "On-site",
 };
+
+export const EMPLOYMENT_TYPES = [
+  "full-time",
+  "part-time",
+  "contract",
+  "internship",
+] as const;
+
+export type EmploymentType = (typeof EMPLOYMENT_TYPES)[number];
+
+export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
+  "full-time": "Full-time",
+  "part-time": "Part-time",
+  contract: "Contract",
+  internship: "Internship",
+};
+
+export const EXPERIENCE_LEVELS = [
+  "intern",
+  "junior",
+  "mid",
+  "senior",
+  "staff",
+  "principal",
+] as const;
+
+export type ExperienceLevel = (typeof EXPERIENCE_LEVELS)[number];
+
+export const EXPERIENCE_LEVEL_LABELS: Record<ExperienceLevel, string> = {
+  intern: "Intern",
+  junior: "Junior",
+  mid: "Mid-level",
+  senior: "Senior",
+  staff: "Staff",
+  principal: "Principal",
+};
