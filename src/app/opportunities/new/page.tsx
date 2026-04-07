@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { OpportunityForm } from "@/components/opportunity-form";
+import { isAiParsingEnabled } from "@/lib/ai";
+import { isFirecrawlEnabled } from "@/lib/firecrawl";
 
 export default function NewOpportunityPage() {
   return (
@@ -14,7 +16,11 @@ export default function NewOpportunityPage() {
         <span className="text-foreground font-medium">Create Opportunity</span>
       </nav>
       <h1 className="text-2xl font-bold">Create Opportunity</h1>
-      <OpportunityForm />
+      <OpportunityForm
+        aiEnabled={isAiParsingEnabled() || isFirecrawlEnabled()}
+        urlAutofillEnabled={isFirecrawlEnabled()}
+        textAutofillEnabled={isAiParsingEnabled()}
+      />
     </div>
   );
 }

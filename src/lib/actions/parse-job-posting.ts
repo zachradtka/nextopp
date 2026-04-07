@@ -1,0 +1,354 @@
+"use server";
+
+import { generateObject } from "ai";
+import * as z from "zod";
+import {
+  getAiLanguageModel,
+  getAiProviderConfig,
+  isAiParsingEnabled,
+} from "@/lib/ai";
+import { requireUserId } from "@/lib/auth-optional";
+import { getFirecrawlConfig, isFirecrawlEnabled } from "@/lib/firecrawl";
+import {
+  parsedJobPostingJsonSchema,
+  parsedJobPostingSchema,
+  type ParsedJobPosting,
+} from "@/lib/validations/parse-job-posting";
+
+type ParseJobPostingInput =
+  | { sourceType: "url"; value: string }
+  | { sourceType: "text"; value: string };
+
+export type ParseJobPostingResult =
+  | { data: ParsedJobPosting; error?: undefined }
+  | { data?: undefined; error: string };
+
+const DEFAULT_PARSE_TIMEOUT_MS = 30_000;
+const FIRECRAWL_EXCTRACTION_PROMPT = `
+Extract job posting details into structured data.
+
+Rules:
+- Only include fields you can infer from the page.
+- Leave fields undefined when they are unknown.
+- Use one of these exact values for workMode: remote, hybrid, onsite.
+- Use one of these exact values for employmentType: full-time, part-time, contract, internship.
+- Use one of these exact values for experienceLevel: intern, junior, mid, senior, staff, principal.
+- Use salaryMin and salaryMax as yearly whole-number amounts in USD when the posting gives a clear annual range.
+- Use datePosted in YYYY-MM-DD format only when the exact date is available.
+- Put the main job posting text in jobDescription when available.
+- Put useful extra context that does not fit elsewhere into notes.
+- Do not invent details.
+`;
+
+function buildPrompt(input: ParseJobPostingInput) {
+  return `
+${FIRECRAWL_EXCTRACTION_PROMPT}
+
+The user pasted the following raw job posting text. Extract as much structured data as you can:
+
+${input.value}
+`;
+}
+
+function hasMeaningfulParsedData(data: ParsedJobPosting) {
+  return Object.entries(data).some(([key, value]) => {
+    if (value == null) {
+      return false;
+    }
+
+    if (key === "url") {
+      return false;
+    }
+
+    if (typeof value === "string") {
+      return value.trim().length > 0;
+    }
+
+    return true;
+  });
+}
+
+function normalizeWhitespace(value?: string) {
+  return value?.replace(/\r\n/g, "\n").trim() || undefined;
+}
+
+function normalizeSalary(value?: number) {
+  if (value == null || !Number.isFinite(value)) {
+    return undefined;
+  }
+
+  const rounded = Math.round(value);
+  return rounded >= 0 ? rounded : undefined;
+}
+
+function getParseTimeoutMs() {
+  const rawValue = process.env.AI_PARSE_TIMEOUT_MS;
+
+  if (!rawValue) {
+    return DEFAULT_PARSE_TIMEOUT_MS;
+  }
+
+  const parsedValue = Number(rawValue);
+  return Number.isFinite(parsedValue) && parsedValue > 0
+    ? parsedValue
+    : DEFAULT_PARSE_TIMEOUT_MS;
+}
+
+function isParserDebugEnabled() {
+  return process.env.AI_PARSER_DEBUG === "true";
+}
+
+function logParserDebug(message: string, details?: Record<string, unknown>) {
+  if (!isParserDebugEnabled()) {
+    return;
+  }
+
+  console.log(`[ai-parser] ${message}`, details ?? {});
+}
+
+async function generateParsedTextPosting(input: Extract<ParseJobPostingInput, { sourceType: "text" }>) {
+  const result = await generateObject({
+    model: getAiLanguageModel(),
+    timeout: { totalMs: getParseTimeoutMs() },
+    schema: parsedJobPostingSchema,
+    schemaName: "parsed_job_posting",
+    schemaDescription: "Structured job posting details for an application tracker",
+    prompt: buildPrompt(input),
+  });
+
+  return result.object;
+}
+
+type FirecrawlScrapeResponse = {
+  success: boolean;
+  data?: {
+    json?: unknown;
+    warning?: string;
+    metadata?: {
+      title?: string;
+      statusCode?: number;
+      sourceURL?: string;
+      error?: string;
+    };
+  };
+};
+
+async function scrapeJobPostingWithFirecrawl(url: string): Promise<ParsedJobPosting> {
+  const config = getFirecrawlConfig();
+
+  if (!config) {
+    throw new Error("Firecrawl is not configured.");
+  }
+
+  const response = await fetch(`${config.apiUrl}/scrape`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url,
+      onlyMainContent: true,
+      timeout: config.timeoutMs,
+      maxAge: config.maxAgeMs,
+      proxy: config.proxy,
+      blockAds: true,
+      removeBase64Images: true,
+      formats: [
+        {
+          type: "json",
+          prompt: FIRECRAWL_EXCTRACTION_PROMPT,
+          schema: parsedJobPostingJsonSchema,
+        },
+      ],
+    }),
+    cache: "no-store",
+  });
+
+  const payload = (await response.json()) as FirecrawlScrapeResponse;
+
+  if (!response.ok || !payload.success) {
+    throw new Error(
+      `Firecrawl scrape failed (${response.status}): ${
+        payload.data?.metadata?.error || "Unknown error"
+      }`
+    );
+  }
+
+  logParserDebug("Firecrawl scrape completed", {
+    warning: payload.data?.warning,
+    statusCode: payload.data?.metadata?.statusCode,
+    title: payload.data?.metadata?.title,
+    sourceURL: payload.data?.metadata?.sourceURL,
+  });
+
+  const parsed = parsedJobPostingSchema.safeParse(payload.data?.json ?? {});
+
+  if (!parsed.success) {
+    throw new Error(
+      `Firecrawl returned invalid structured data: ${z.prettifyError(parsed.error)}`
+    );
+  }
+
+  return parsed.data;
+}
+
+function normalizeParsedJobPosting(
+  data: ParsedJobPosting,
+  input: ParseJobPostingInput
+): ParsedJobPosting {
+  const normalized: ParsedJobPosting = {
+    ...data,
+    company: normalizeWhitespace(data.company),
+    role: normalizeWhitespace(data.role),
+    location: normalizeWhitespace(data.location),
+    salaryMin: normalizeSalary(data.salaryMin),
+    salaryMax: normalizeSalary(data.salaryMax),
+    department: normalizeWhitespace(data.department),
+    jobId: normalizeWhitespace(data.jobId),
+    contactName: normalizeWhitespace(data.contactName),
+    jobDescription: normalizeWhitespace(data.jobDescription),
+    notes: normalizeWhitespace(data.notes),
+  };
+
+  if (input.sourceType === "url") {
+    normalized.url = input.value;
+  }
+
+  if (input.sourceType === "text" && !normalized.jobDescription) {
+    normalized.jobDescription = normalizeWhitespace(input.value);
+  }
+
+  if (
+    normalized.salaryMin != null &&
+    normalized.salaryMax != null &&
+    normalized.salaryMin > normalized.salaryMax
+  ) {
+    [normalized.salaryMin, normalized.salaryMax] = [
+      normalized.salaryMax,
+      normalized.salaryMin,
+    ];
+  }
+
+  return normalized;
+}
+
+export async function parseJobPosting(
+  input: ParseJobPostingInput
+): Promise<ParseJobPostingResult> {
+  await requireUserId();
+
+  const value = input.value.trim();
+  const providerConfig = getAiProviderConfig();
+  const firecrawlConfig = getFirecrawlConfig();
+  const startedAt = Date.now();
+
+  if (!value) {
+    return {
+      error:
+        input.sourceType === "url"
+          ? "Paste a job posting URL to auto-fill the form."
+          : "Paste a job description to auto-fill the form.",
+    };
+  }
+
+  if (input.sourceType === "url") {
+    try {
+      new URL(value);
+    } catch {
+      return { error: "Enter a valid job posting URL." };
+    }
+  }
+
+  if (input.sourceType === "url" && !isFirecrawlEnabled()) {
+    return { error: "URL parsing is not configured." };
+  }
+
+  if (input.sourceType === "text" && !isAiParsingEnabled()) {
+    return { error: "Text parsing is not configured." };
+  }
+
+  try {
+    logParserDebug("Starting parse", {
+      provider:
+        input.sourceType === "url"
+          ? "firecrawl"
+          : providerConfig?.provider ?? "unknown",
+      model: input.sourceType === "text" ? providerConfig?.model ?? "unknown" : undefined,
+      sourceType: input.sourceType,
+      timeoutMs:
+        input.sourceType === "url"
+          ? firecrawlConfig?.timeoutMs
+          : getParseTimeoutMs(),
+      url: input.sourceType === "url" ? value : undefined,
+      textLength: input.sourceType === "text" ? value.length : undefined,
+    });
+
+    const parsed =
+      input.sourceType === "url"
+        ? await scrapeJobPostingWithFirecrawl(value)
+        : await generateParsedTextPosting({ ...input, value });
+    const data = normalizeParsedJobPosting(parsed, { ...input, value });
+    const durationMs = Date.now() - startedAt;
+
+    logParserDebug("Parse completed", {
+      provider:
+        input.sourceType === "url"
+          ? "firecrawl"
+          : providerConfig?.provider ?? "unknown",
+      sourceType: input.sourceType,
+      durationMs,
+      extractedFields: Object.keys(data).filter((key) => {
+        const field = data[key as keyof ParsedJobPosting];
+        return field != null && String(field).trim() !== "";
+      }),
+    });
+
+    if (!hasMeaningfulParsedData(data)) {
+      return {
+        error:
+          input.sourceType === "url"
+            ? "Couldn't parse that posting. Try pasting the job description text instead."
+            : "Couldn't parse that posting text. Please review it and fill the form manually.",
+      };
+    }
+
+    return { data };
+  } catch (error) {
+    const durationMs = Date.now() - startedAt;
+
+    console.error("Failed to parse job posting", {
+      provider:
+        input.sourceType === "url"
+          ? "firecrawl"
+          : providerConfig?.provider ?? "unknown",
+      model: input.sourceType === "text" ? providerConfig?.model ?? "unknown" : undefined,
+      sourceType: input.sourceType,
+      timeoutMs:
+        input.sourceType === "url"
+          ? firecrawlConfig?.timeoutMs
+          : getParseTimeoutMs(),
+      durationMs,
+      error,
+    });
+
+    const errorMessage =
+      error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+
+    if (errorMessage.includes("timed out") || errorMessage.includes("abort")) {
+      return {
+        error:
+          input.sourceType === "url"
+            ? "URL parsing took too long. Try again or paste the job description text instead."
+            : "AI parsing took too long. Try pasting the job description text instead.",
+      };
+    }
+
+    return {
+      error:
+        input.sourceType === "url"
+          ? "Couldn't parse that posting. Try pasting the job description text instead."
+          : "Couldn't parse that posting text right now. Please try again or fill the form manually.",
+    };
+  }
+}

@@ -50,3 +50,22 @@ TURSO_DATABASE_URL=<url> TURSO_AUTH_TOKEN=<token> npm run db:push
 ## GitHub Issues
 
 Feature backlog is tracked in GitHub Issues: https://github.com/zachradtka/opportunity-tracker/issues
+
+## AI Parsing
+
+- URL parsing uses Firecrawl when `FIRECRAWL_API_KEY` is configured
+- Pasted-text parsing uses the configured AI provider when `AI_PROVIDER` is set to a supported provider and the matching API key is present
+- Supported providers today: `openai`, `anthropic`, `google`
+- Optional: set `AI_MODEL` to override the default model for the selected provider
+- Optional: set `AI_PARSE_TIMEOUT_MS` to control how long a parse call can run before it fails
+- Optional: set `AI_PARSER_DEBUG=true` for verbose server logs while debugging parser behavior locally
+- Optional Firecrawl settings:
+  - `FIRECRAWL_API_URL` defaults to `https://api.firecrawl.dev/v2`
+  - `FIRECRAWL_TIMEOUT_MS` controls the Firecrawl scrape timeout
+  - `FIRECRAWL_MAX_AGE_MS` controls Firecrawl caching
+  - `FIRECRAWL_PROXY` can be `basic`, `enhanced`, or `auto`
+- Required keys by provider:
+  - `OPENAI_API_KEY` when `AI_PROVIDER=openai`
+  - `ANTHROPIC_API_KEY` when `AI_PROVIDER=anthropic`
+  - `GOOGLE_GENERATIVE_AI_API_KEY` when `AI_PROVIDER=google`
+- When neither Firecrawl nor an AI provider is configured, the opportunity form renders exactly like the non-AI version
