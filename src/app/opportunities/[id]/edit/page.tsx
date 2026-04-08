@@ -36,7 +36,12 @@ export default async function EditOpportunityPage({ params }: PageProps) {
       <h1 className="text-2xl font-bold">
         Edit: {opportunity.company} — {opportunity.role}
       </h1>
-      <OpportunityForm opportunity={opportunity} />
+      <OpportunityForm
+        opportunity={opportunity}
+        aiEnabled={false}
+        urlAutofillEnabled={false}
+        textAutofillEnabled={false}
+      />
     </div>
   );
 }

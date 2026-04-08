@@ -1,7 +1,16 @@
 "use client";
 
-import { useActionState, useEffect, useState, useCallback, useRef } from "react";
+import {
+  useActionState,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useTransition,
+  useMemo,
+} from "react";
 import { useRouter } from "next/navigation";
+import { LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,15 +39,26 @@ import {
   type OpportunityFormState,
   type ValidatableField,
 } from "@/lib/validations/opportunity";
+import { parseJobPosting } from "@/lib/actions/parse-job-posting";
+import type { ParsedJobPosting } from "@/lib/validations/parse-job-posting";
 
 interface OpportunityFormProps {
   opportunity?: Opportunity;
+  aiEnabled?: boolean;
+  urlAutofillEnabled?: boolean;
+  textAutofillEnabled?: boolean;
 }
 
-export function OpportunityForm({ opportunity }: OpportunityFormProps) {
+export function OpportunityForm({
+  opportunity,
+  aiEnabled = false,
+  urlAutofillEnabled = false,
+  textAutofillEnabled = false,
+}: OpportunityFormProps) {
   const router = useRouter();
   const isEditing = !!opportunity;
   const formRef = useRef<HTMLFormElement>(null);
+  const [isParsing, startParsing] = useTransition();
 
   // Controlled form values
   const [values, setValues] = useState({
@@ -63,6 +83,11 @@ export function OpportunityForm({ opportunity }: OpportunityFormProps) {
   });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
+  const [aiInputMode, setAiInputMode] = useState<"url" | "text">(
+    urlAutofillEnabled ? "url" : "text"
+  );
+  const [aiInputValue, setAiInputValue] = useState("");
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const boundUpdateAction = opportunity
     ? updateOpportunity.bind(null, opportunity.id)
@@ -82,17 +107,20 @@ export function OpportunityForm({ opportunity }: OpportunityFormProps) {
   const formAction = isEditing ? updateAction : createAction;
   const pending = isEditing ? updatePending : createPending;
 
-  // Merge server errors into field errors when they come back
-  useEffect(() => {
-    if (state.errors) {
-      const serverErrors: Record<string, string | null> = {};
-      for (const [key, messages] of Object.entries(state.errors)) {
-        if (messages && messages.length > 0) {
-          serverErrors[key] = messages[0];
-        }
-      }
-      setFieldErrors((prev) => ({ ...prev, ...serverErrors }));
+  const serverFieldErrors = useMemo(() => {
+    const next: Record<string, string | null> = {};
+
+    if (!state.errors) {
+      return next;
     }
+
+    for (const [key, messages] of Object.entries(state.errors)) {
+      if (messages && messages.length > 0) {
+        next[key] = messages[0];
+      }
+    }
+
+    return next;
   }, [state.errors]);
 
   // Navigate on success
@@ -151,14 +179,129 @@ export function OpportunityForm({ opportunity }: OpportunityFormProps) {
   );
 
   const getError = (field: string): string | null => {
-    return fieldErrors[field] ?? null;
+    return fieldErrors[field] ?? serverFieldErrors[field] ?? null;
   };
+
+  const applyParsedValues = useCallback((parsed: ParsedJobPosting) => {
+    setValues((prev) => ({
+      ...prev,
+      company: parsed.company ?? "",
+      role: parsed.role ?? "",
+      department: parsed.department ?? "",
+      jobId: parsed.jobId ?? "",
+      employmentType: parsed.employmentType ?? "",
+      experienceLevel: parsed.experienceLevel ?? "",
+      workMode: parsed.workMode ?? "",
+      location: parsed.location ?? "",
+      url: parsed.url ?? "",
+      salaryMin: parsed.salaryMin != null ? String(parsed.salaryMin) : "",
+      salaryMax: parsed.salaryMax != null ? String(parsed.salaryMax) : "",
+      contactName: parsed.contactName ?? "",
+      datePosted: parsed.datePosted ?? "",
+      jobDescription: parsed.jobDescription ?? "",
+      notes: parsed.notes ?? "",
+    }));
+  }, []);
+
+  const handleAutoFill = useCallback(() => {
+    setAiError(null);
+
+    startParsing(async () => {
+      const result = await parseJobPosting({
+        sourceType: aiInputMode,
+        value: aiInputValue,
+      });
+
+      if (result.error) {
+        setAiError(result.error);
+        return;
+      }
+
+      if (!result.data) {
+        setAiError("Couldn't parse that posting right now. Please try again.");
+        return;
+      }
+
+      applyParsedValues(result.data);
+    });
+  }, [aiInputMode, aiInputValue, applyParsedValues]);
 
   return (
     <form ref={formRef} action={formAction} className="space-y-6 max-w-2xl">
       {state.message && state.errors && (
         <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {state.message}
+        </div>
+      )}
+
+      {aiEnabled && !isEditing && (
+        <div className="space-y-4 rounded-2xl border border-border/70 bg-muted/40 p-4 sm:p-5">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold">Paste a posting to auto-fill with AI</h2>
+            <p className="text-sm text-muted-foreground">
+              {urlAutofillEnabled && textAutofillEnabled
+                ? "Drop in a job URL or paste the description text, then review the suggested fields before saving."
+                : urlAutofillEnabled
+                  ? "Drop in a job URL and we&apos;ll scrape the posting to suggest form values."
+                  : "Paste the description text, then review the suggested fields before saving."}
+            </p>
+          </div>
+
+          {aiInputMode === "url" && urlAutofillEnabled ? (
+            <div className="space-y-2">
+              <Label htmlFor="ai-url">Job Posting URL</Label>
+              <Input
+                id="ai-url"
+                value={aiInputValue}
+                onChange={(e) => setAiInputValue(e.target.value)}
+                placeholder="https://..."
+                disabled={isParsing}
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="ai-text">Job Description Text</Label>
+              <Textarea
+                id="ai-text"
+                rows={8}
+                value={aiInputValue}
+                onChange={(e) => setAiInputValue(e.target.value)}
+                placeholder="Paste the job posting text here..."
+                className="resize-y"
+                disabled={isParsing}
+              />
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {urlAutofillEnabled && textAutofillEnabled ? (
+              <button
+                type="button"
+                className="w-fit text-sm text-primary underline-offset-4 hover:underline"
+                onClick={() => {
+                  setAiError(null);
+                  setAiInputValue("");
+                  setAiInputMode((prev) => (prev === "url" ? "text" : "url"));
+                }}
+              >
+                {aiInputMode === "url"
+                  ? "Or paste job description text"
+                  : "Or switch back to a job posting URL"}
+              </button>
+            ) : (
+              <div />
+            )}
+            <Button type="button" onClick={handleAutoFill} disabled={isParsing}>
+              {isParsing && <LoaderCircle className="animate-spin" />}
+              {isParsing ? "Auto-filling..." : "Auto-fill"}
+            </Button>
+          </div>
+
+          {aiError && (
+            <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              {aiError}
+            </p>
+          )}
         </div>
       )}
 

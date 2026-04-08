@@ -155,25 +155,30 @@ export type OpportunityFormState = {
   message?: string;
 };
 
+function getOptionalFormValue(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return value === null ? undefined : value;
+}
+
 export function parseFormData(formData: FormData) {
   return opportunitySchema.safeParse({
     company: formData.get("company"),
     role: formData.get("role"),
-    url: formData.get("url"),
-    status: formData.get("status"),
-    salaryMin: formData.get("salaryMin"),
-    salaryMax: formData.get("salaryMax"),
-    workMode: formData.get("workMode"),
-    location: formData.get("location"),
-    department: formData.get("department"),
-    employmentType: formData.get("employmentType"),
-    experienceLevel: formData.get("experienceLevel"),
-    jobId: formData.get("jobId"),
-    datePosted: formData.get("datePosted"),
-    contactName: formData.get("contactName"),
-    jobDescription: formData.get("jobDescription"),
-    notes: formData.get("notes"),
-    appliedAt: formData.get("appliedAt"),
-    respondedAt: formData.get("respondedAt"),
+    url: getOptionalFormValue(formData, "url"),
+    status: getOptionalFormValue(formData, "status"),
+    salaryMin: getOptionalFormValue(formData, "salaryMin"),
+    salaryMax: getOptionalFormValue(formData, "salaryMax"),
+    workMode: getOptionalFormValue(formData, "workMode"),
+    location: getOptionalFormValue(formData, "location"),
+    department: getOptionalFormValue(formData, "department"),
+    employmentType: getOptionalFormValue(formData, "employmentType"),
+    experienceLevel: getOptionalFormValue(formData, "experienceLevel"),
+    jobId: getOptionalFormValue(formData, "jobId"),
+    datePosted: getOptionalFormValue(formData, "datePosted"),
+    contactName: getOptionalFormValue(formData, "contactName"),
+    jobDescription: getOptionalFormValue(formData, "jobDescription"),
+    notes: getOptionalFormValue(formData, "notes"),
+    appliedAt: getOptionalFormValue(formData, "appliedAt"),
+    respondedAt: getOptionalFormValue(formData, "respondedAt"),
   });
 }
