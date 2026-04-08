@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { opportunities, statusHistory } from "@/lib/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 import type { Status } from "@/lib/constants";
@@ -25,7 +25,8 @@ async function recordStatusChange(
 
 export async function listOpportunities(
   statusFilter?: Status | "all",
-  showArchived = false
+  showArchived = false,
+  search?: string
 ) {
   const userId = await requireUserId();
   const conditions = [eq(opportunities.userId, userId)];
@@ -36,6 +37,14 @@ export async function listOpportunities(
 
   if (statusFilter && statusFilter !== "all") {
     conditions.push(eq(opportunities.status, statusFilter));
+  }
+
+  if (search) {
+    const escaped = search.replace(/[%_\\]/g, "\\$&");
+    const pattern = `%${escaped}%`;
+    conditions.push(
+      sql`(${opportunities.company} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.role} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.jobId} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.location} LIKE ${pattern} ESCAPE '\\')`
+    );
   }
 
   return db
