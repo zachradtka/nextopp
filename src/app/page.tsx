@@ -7,14 +7,15 @@ import { listOpportunities } from "@/lib/actions/opportunities";
 import type { Status } from "@/lib/constants";
 
 interface PageProps {
-  searchParams: Promise<{ status?: string; archived?: string }>;
+  searchParams: Promise<{ status?: string; archived?: string; search?: string }>;
 }
 
 export default async function HomePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const statusFilter = (params.status as Status | "all") ?? "all";
   const showArchived = params.archived === "true";
-  const opportunities = await listOpportunities(statusFilter, showArchived);
+  const search = params.search || undefined;
+  const opportunities = await listOpportunities(statusFilter, showArchived, search);
 
   return (
     <div className="space-y-6">
