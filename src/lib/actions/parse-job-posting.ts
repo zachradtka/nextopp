@@ -40,6 +40,66 @@ Rules:
 - Do not invent details.
 `;
 
+// Validates URL for safe processing with Firecrawl (prevent SSRF by blocking localhost/private IPs)
+function validateJobPostingUrl(url: string): { valid: true } | { valid: false; error: string } {
+  let parsed: URL;
+
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { valid: false, error: "Enter a valid job posting URL." };
+  }
+
+  const hostname = parsed.hostname || "";
+  const lowerHostname = hostname.toLowerCase();
+
+  // Block localhost and loopback addresses
+  if (
+    lowerHostname === "localhost" ||
+    lowerHostname === "127.0.0.1" ||
+    lowerHostname === "::1" ||
+    lowerHostname.startsWith("[::ffff:127.")
+  ) {
+    return { valid: false, error: "Cannot parse job postings from localhost." };
+  }
+
+  // Block private IP ranges
+  const ipMatch = hostname.match(
+    /^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|fe80:|fc[0-9a-f]{2}:)/i
+  );
+  if (ipMatch) {
+    return { valid: false, error: "Cannot parse job postings from private IP addresses." };
+  }
+
+  // Block reserved IPs
+  const reservedIps = [
+    "0",
+    "255",
+    "169.254",
+    "224",
+    "225",
+    "226",
+    "227",
+    "228",
+    "229",
+    "230",
+    "231",
+    "232",
+    "233",
+    "234",
+    "235",
+    "236",
+    "237",
+    "238",
+    "239",
+  ];
+  if (reservedIps.some((ip) => hostname.startsWith(ip + "."))) {
+    return { valid: false, error: "Cannot parse job postings from reserved IP addresses." };
+  }
+
+  return { valid: true };
+}
+
 function buildPrompt(input: ParseJobPostingInput) {
   return `
 ${FIRECRAWL_EXCTRACTION_PROMPT}
@@ -69,7 +129,7 @@ function hasMeaningfulParsedData(data: ParsedJobPosting) {
 }
 
 function normalizeWhitespace(value?: string) {
-  return value?.replace(/\r\n/g, "\n").trim() || undefined;
+  return value?.replace(/\r\n/g, "\n").replace(/\s+/g, " ").trim() || undefined;
 }
 
 function normalizeSalary(value?: number) {
@@ -253,10 +313,9 @@ export async function parseJobPosting(
   }
 
   if (input.sourceType === "url") {
-    try {
-      new URL(value);
-    } catch {
-      return { error: "Enter a valid job posting URL." };
+    const urlValidation = validateJobPostingUrl(value);
+    if (!urlValidation.valid) {
+      return { error: urlValidation.error };
     }
   }
 
@@ -329,7 +388,7 @@ export async function parseJobPosting(
           ? firecrawlConfig?.timeoutMs
           : getParseTimeoutMs(),
       durationMs,
-      error,
+      errorMessage: error instanceof Error ? error.message : String(error),
     });
 
     const errorMessage =
