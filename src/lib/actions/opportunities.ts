@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { opportunities, statusHistory } from "@/lib/db/schema";
-import { eq, desc, and, or, like } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 import type { Status } from "@/lib/constants";
@@ -40,14 +40,10 @@ export async function listOpportunities(
   }
 
   if (search) {
-    const pattern = `%${search}%`;
+    const escaped = search.replace(/[%_\\]/g, "\\$&");
+    const pattern = `%${escaped}%`;
     conditions.push(
-      or(
-        like(opportunities.company, pattern),
-        like(opportunities.role, pattern),
-        like(opportunities.jobId, pattern),
-        like(opportunities.location, pattern)
-      )!
+      sql`(${opportunities.company} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.role} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.jobId} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.location} LIKE ${pattern} ESCAPE '\\')`
     );
   }
 
