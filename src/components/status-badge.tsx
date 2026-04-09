@@ -2,11 +2,12 @@
 
 import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { STATUSES, STATUS_LABELS, STATUS_COLORS, type Status } from "@/lib/constants";
 import { updateOpportunityStatus } from "@/lib/actions/opportunities";
 
@@ -21,33 +22,36 @@ export function StatusBadge({
   opportunityId,
   interactive = true,
 }: StatusBadgeProps) {
-  const badge = (
-    <Badge
-      variant="outline"
-      className={`${STATUS_COLORS[status]} border-0 cursor-pointer text-[0.75rem] uppercase tracking-wide font-bold`}
-    >
-      {STATUS_LABELS[status]}
-    </Badge>
-  );
-
-  if (!interactive) return badge;
+  if (!interactive) {
+    return (
+      <Badge
+        variant="outline"
+        className={`${STATUS_COLORS[status]} border-0 text-[0.75rem] uppercase tracking-wide font-bold`}
+      >
+        {STATUS_LABELS[status]}
+      </Badge>
+    );
+  }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="cursor-pointer">
-        {badge}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
+    <Select
+      value={status}
+      onValueChange={(value) => updateOpportunityStatus(opportunityId, value as Status)}
+    >
+      <SelectTrigger className="w-40">
+        <SelectValue>
+          <span className={`inline-block w-2 h-2 rounded-full ${STATUS_COLORS[status]}`} />
+          {STATUS_LABELS[status]}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
         {STATUSES.map((s) => (
-          <DropdownMenuItem
-            key={s}
-            onClick={() => updateOpportunityStatus(opportunityId, s)}
-          >
-            <span className={`inline-block w-2 h-2 rounded-full mr-2 ${STATUS_COLORS[s]}`} />
+          <SelectItem key={s} value={s}>
+            <span className={`inline-block w-2 h-2 rounded-full ${STATUS_COLORS[s]}`} />
             {STATUS_LABELS[s]}
-          </DropdownMenuItem>
+          </SelectItem>
         ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </SelectContent>
+    </Select>
   );
 }
