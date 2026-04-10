@@ -6,7 +6,14 @@ import { users } from "./db/schema";
 const allowedUsers = process.env.ALLOWED_USERS?.split(",").map((u) => u.trim());
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [GitHub],
+  providers: [
+    GitHub({
+      // GitHub now sends an "iss" parameter in OAuth callbacks (RFC 9207).
+      // Auth.js defaults to "https://authjs.dev" for non-OIDC providers,
+      // which doesn't match, causing a CallbackRouteError.
+      issuer: "https://github.com",
+    }),
+  ],
   callbacks: {
     signIn({ profile }) {
       if (!allowedUsers || allowedUsers.length === 0) return true;
