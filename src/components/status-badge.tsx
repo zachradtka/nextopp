@@ -8,7 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { STATUSES, STATUS_LABELS, STATUS_COLORS, type Status } from "@/lib/constants";
+import {
+  STATUSES,
+  STATUS_LABELS,
+  STATUS_COLORS,
+  STATUS_DOT_COLORS,
+  type Status,
+} from "@/lib/constants";
 import { updateOpportunityStatus } from "@/lib/actions/opportunities";
 
 interface StatusBadgeProps {
@@ -40,15 +46,19 @@ export function StatusBadge({
     >
       <SelectTrigger className="w-40">
         <SelectValue>
-          <span className={`inline-block w-2 h-2 rounded-full ${STATUS_COLORS[status]}`} />
-          {STATUS_LABELS[status]}
+          <span className="flex items-center gap-2">
+            <span className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT_COLORS[status]}`} />
+            {STATUS_LABELS[status]}
+          </span>
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {STATUSES.map((s) => (
           <SelectItem key={s} value={s}>
-            <span className={`inline-block w-2 h-2 rounded-full ${STATUS_COLORS[s]}`} />
-            {STATUS_LABELS[s]}
+            <span className="flex items-center gap-2">
+              <span className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT_COLORS[s]}`} />
+              {STATUS_LABELS[s]}
+            </span>
           </SelectItem>
         ))}
       </SelectContent>

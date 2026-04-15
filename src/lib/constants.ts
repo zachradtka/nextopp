@@ -30,6 +30,16 @@ export const STATUS_COLORS: Record<Status, string> = {
   accepted: "bg-[#D1FAE5] text-[#059669]",
 };
 
+export const STATUS_DOT_COLORS: Record<Status, string> = {
+  saved: "bg-[#9CA3AF]",
+  applied: "bg-[#3B82F6]",
+  interviewing: "bg-[#F59E0B]",
+  offered: "bg-[#8B5CF6]",
+  rejected: "bg-[#EF4444]",
+  withdrawn: "bg-[#64748B]",
+  accepted: "bg-[#10B981]",
+};
+
 export const WORK_MODES = ["remote", "hybrid", "onsite"] as const;
 
 export type WorkMode = (typeof WORK_MODES)[number];
