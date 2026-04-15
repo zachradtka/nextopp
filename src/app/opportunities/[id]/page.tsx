@@ -45,8 +45,6 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-6 max-w-2xl">
       <nav className="text-sm text-muted-foreground">
-        <span>Portfolio</span>
-        <span className="mx-1.5">&rsaquo;</span>
         <Link href="/" className="hover:text-foreground">
           Applications
         </Link>

@@ -19,13 +19,6 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <nav className="text-sm text-muted-foreground">
-        <span>Portfolio</span>
-        <span className="mx-1.5">&rsaquo;</span>
-        <span className="text-primary font-medium">Applications</span>
-      </nav>
-
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
