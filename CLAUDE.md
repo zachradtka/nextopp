@@ -19,7 +19,7 @@ npm run import -- <csv>  # Import opportunities from CSV
 - **Framework**: Next.js 16 (App Router, Server Components, Server Actions)
 - **Database**: SQLite locally (`local.db`), Turso (libSQL) in production — auto-switches via `TURSO_DATABASE_URL` env var
 - **ORM**: Drizzle — schema in `src/lib/db/schema.ts`, client in `src/lib/db/index.ts`
-- **Auth**: Auth.js (NextAuth v5) with GitHub OAuth — disabled by default via `AUTH_DISABLED=true`
+- **Auth**: Auth.js (NextAuth v5) with GitHub, Google, LinkedIn OAuth + email magic link — disabled by default via `AUTH_DISABLED=true`
 - **Styling**: Tailwind CSS v4 + shadcn/ui (uses `@base-ui/react`, NOT Radix — no `asChild` prop)
 - **Deployment**: Vercel, auto-deploys on push to main
 
@@ -28,8 +28,10 @@ npm run import -- <csv>  # Import opportunities from CSV
 - Server Actions for all data mutations (`src/lib/actions/`)
 - Status is a text enum defined in `src/lib/constants.ts`, not a DB table — keep it that way
 - Work mode (remote/hybrid/onsite) should be separate from location (see issue #1)
-- Auth is optional — `AUTH_DISABLED=true` skips auth entirely, no GitHub OAuth needed
-- `ALLOWED_USERS` env var restricts sign-in to specific GitHub usernames (comma-separated)
+- Auth is optional — `AUTH_DISABLED=true` skips auth entirely, no OAuth needed
+- `ALLOWED_USERS` env var restricts sign-in to specific GitHub usernames or email addresses (comma-separated)
+- Auth providers are configured dynamically — only providers with env vars set appear on the sign-in page
+- Email magic link requires `AUTH_RESEND_KEY` (Resend API key) and optionally `AUTH_EMAIL_FROM`
 - Next.js 16 uses `proxy.ts` instead of `middleware.ts`
 - Drizzle config requires `dialect: "turso"` (not `"sqlite"`) when using `TURSO_DATABASE_URL`
 

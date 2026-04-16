@@ -1,49 +1,72 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
+import LinkedIn from "next-auth/providers/linkedin";
+import Resend from "next-auth/providers/resend";
+import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "./db";
-import { users } from "./db/schema";
+import { users, accounts, verificationTokens } from "./db/schema";
 
-const allowedUsers = process.env.ALLOWED_USERS?.split(",").map((u) => u.trim());
+const allowedUsers = process.env.ALLOWED_USERS?.split(",").map((u) =>
+  u.trim().toLowerCase()
+);
+
+function buildProviders() {
+  const providers = [];
+
+  if (process.env.AUTH_GITHUB_ID) {
+    providers.push(GitHub);
+  }
+  if (process.env.AUTH_GOOGLE_ID) {
+    providers.push(Google);
+  }
+  if (process.env.AUTH_LINKEDIN_ID) {
+    providers.push(LinkedIn);
+  }
+  if (process.env.AUTH_RESEND_KEY) {
+    providers.push(
+      Resend({
+        apiKey: process.env.AUTH_RESEND_KEY,
+        from: process.env.AUTH_EMAIL_FROM ?? "Opportunity Tracker <noreply@resend.dev>",
+      })
+    );
+  }
+
+  return providers;
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [GitHub],
+  adapter: DrizzleAdapter(db as never, {
+    usersTable: users,
+    accountsTable: accounts,
+    verificationTokensTable: verificationTokens,
+  } as never),
+  providers: buildProviders(),
   callbacks: {
-    signIn({ profile }) {
+    signIn({ user, profile, account }) {
       if (!allowedUsers || allowedUsers.length === 0) return true;
-      return allowedUsers.includes(profile?.login as string);
-    },
-    async jwt({ token, profile }) {
-      if (profile) {
-        // Use GitHub's numeric user ID as our stable identifier
-        // (token.sub is unstable with JWT strategy and no DB adapter)
-        const githubId = String(profile.id);
-        token.userId = githubId;
 
-        const now = new Date().toISOString();
-        await db
-          .insert(users)
-          .values({
-            id: githubId,
-            name: (profile.name as string) ?? null,
-            email: (profile.email as string) ?? "",
-            image: (profile.avatar_url as string) ?? null,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .onConflictDoUpdate({
-            target: users.id,
-            set: {
-              name: (profile.name as string) ?? undefined,
-              image: (profile.avatar_url as string) ?? undefined,
-              updatedAt: now,
-            },
-          });
+      // For email/magic link, check email against allow list
+      if (account?.provider === "resend") {
+        return allowedUsers.includes(user.email?.toLowerCase() ?? "");
       }
-      return token;
+
+      // For GitHub, check login username or email
+      if (account?.provider === "github") {
+        const login = (profile?.login as string)?.toLowerCase();
+        if (login && allowedUsers.includes(login)) return true;
+      }
+
+      // For all providers, check email against allow list
+      const email =
+        user.email?.toLowerCase() ?? profile?.email?.toString().toLowerCase();
+      if (email && allowedUsers.includes(email)) return true;
+
+      return false;
     },
     session({ session, token }) {
-      if (session.user && token.userId) {
-        session.user.id = token.userId as string;
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
       }
       return session;
     },
