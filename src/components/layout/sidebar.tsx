@@ -101,10 +101,7 @@ export function Sidebar({
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-semibold leading-tight">
-                Opportunity
-              </span>
-              <span className="text-xs text-sidebar-foreground/60 leading-tight">
-                Career Portfolio
+                Opportunity Tracker
               </span>
             </div>
           )}
