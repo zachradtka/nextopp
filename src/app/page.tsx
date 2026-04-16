@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { OpportunityTable } from "@/components/opportunity-table";
 import { StatusFilter } from "@/components/status-filter";
-import { listOpportunities } from "@/lib/actions/opportunities";
+import { listOpportunities, getStatusCounts } from "@/lib/actions/opportunities";
 import type { Status } from "@/lib/constants";
 
 interface PageProps {
@@ -15,7 +14,10 @@ export default async function HomePage({ searchParams }: PageProps) {
   const statusFilter = (params.status as Status | "all") ?? "all";
   const showArchived = params.archived === "true";
   const search = params.search || undefined;
-  const opportunities = await listOpportunities(statusFilter, showArchived, search);
+  const [opportunities, statusCounts] = await Promise.all([
+    listOpportunities(statusFilter, showArchived, search),
+    getStatusCounts(showArchived, search),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -36,9 +38,7 @@ export default async function HomePage({ searchParams }: PageProps) {
       </div>
 
       {/* Filters */}
-      <Suspense>
-        <StatusFilter />
-      </Suspense>
+      <StatusFilter current={statusFilter} counts={statusCounts} searchParams={params} />
 
       {/* Table */}
       <OpportunityTable opportunities={opportunities} />

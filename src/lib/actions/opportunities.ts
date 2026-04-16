@@ -23,6 +23,41 @@ async function recordStatusChange(
   });
 }
 
+export async function getStatusCounts(
+  showArchived = false,
+  search?: string
+): Promise<Record<string, number>> {
+  const userId = await requireUserId();
+  const conditions = [eq(opportunities.userId, userId)];
+
+  if (!showArchived) {
+    conditions.push(eq(opportunities.archived, 0));
+  }
+
+  if (search) {
+    const escaped = search.replace(/[%_\\]/g, "\\$&");
+    const pattern = `%${escaped}%`;
+    conditions.push(
+      sql`(${opportunities.company} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.role} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.jobId} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.location} LIKE ${pattern} ESCAPE '\\')`
+    );
+  }
+
+  const rows = await db
+    .select({
+      status: opportunities.status,
+      count: sql<number>`count(*)`,
+    })
+    .from(opportunities)
+    .where(and(...conditions))
+    .groupBy(opportunities.status);
+
+  const counts: Record<string, number> = {};
+  for (const row of rows) {
+    counts[row.status] = row.count;
+  }
+  return counts;
+}
+
 export async function listOpportunities(
   statusFilter?: Status | "all",
   showArchived = false,
