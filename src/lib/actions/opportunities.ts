@@ -51,7 +51,7 @@ export async function listOpportunities(
     .select()
     .from(opportunities)
     .where(and(...conditions))
-    .orderBy(desc(opportunities.updatedAt));
+    .orderBy(desc(opportunities.createdAt));
 }
 
 export async function getOpportunity(id: string) {
