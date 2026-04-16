@@ -1,22 +1,31 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
+import { Markdown } from "@/components/markdown";
+import { OpportunityActions } from "@/components/opportunity-actions";
 import {
   getOpportunity,
   getStatusHistory,
-  archiveOpportunity,
-  deleteOpportunity,
 } from "@/lib/actions/opportunities";
 import type { Status, WorkMode, EmploymentType, ExperienceLevel } from "@/lib/constants";
 import {
   STATUS_LABELS,
-  STATUS_COLORS,
+  STATUS_DOT_COLORS,
   WORK_MODE_LABELS,
   EMPLOYMENT_TYPE_LABELS,
   EXPERIENCE_LEVEL_LABELS,
 } from "@/lib/constants";
-import { redirect } from "next/navigation";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-0.5">
+      <dt className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+        {label}
+      </dt>
+      <dd className="text-sm text-foreground font-medium">{children}</dd>
+    </div>
+  );
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -42,8 +51,119 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
     .filter(Boolean)
     .join(" · ");
 
+  const sidebar = (
+    <div className="space-y-6">
+      <div className="rounded-lg border bg-card p-5">
+        <dl className="space-y-4">
+          {locationDisplay && <Field label="Location">{locationDisplay}</Field>}
+          {opportunity.department && (
+            <Field label="Department">{opportunity.department}</Field>
+          )}
+          {opportunity.employmentType && (
+            <Field label="Employment Type">
+              {EMPLOYMENT_TYPE_LABELS[opportunity.employmentType as EmploymentType] ??
+                opportunity.employmentType}
+            </Field>
+          )}
+          {opportunity.experienceLevel && (
+            <Field label="Experience Level">
+              {EXPERIENCE_LEVEL_LABELS[opportunity.experienceLevel as ExperienceLevel] ??
+                opportunity.experienceLevel}
+            </Field>
+          )}
+          {opportunity.jobId && <Field label="Job ID">{opportunity.jobId}</Field>}
+          {(opportunity.salaryMin || opportunity.salaryMax) && (
+            <Field label="Salary">
+              {opportunity.salaryMin &&
+                `$${opportunity.salaryMin.toLocaleString()}`}
+              {opportunity.salaryMin && opportunity.salaryMax && " – "}
+              {opportunity.salaryMax &&
+                `$${opportunity.salaryMax.toLocaleString()}`}
+            </Field>
+          )}
+          {opportunity.contactName && (
+            <Field label="Contact">{opportunity.contactName}</Field>
+          )}
+          {opportunity.datePosted && (
+            <Field label="Date Posted">{opportunity.datePosted}</Field>
+          )}
+          {opportunity.appliedAt && (
+            <Field label="Applied">{opportunity.appliedAt}</Field>
+          )}
+          {opportunity.respondedAt && (
+            <Field label="Responded">{opportunity.respondedAt}</Field>
+          )}
+          {opportunity.url && (
+            <Field label="Posting">
+              <a
+                href={opportunity.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline"
+              >
+                View posting
+              </a>
+            </Field>
+          )}
+        </dl>
+      </div>
+    </div>
+  );
+
+  const mainContent = (
+    <div className="space-y-6">
+      {opportunity.jobDescription && (
+        <section className="rounded-lg border bg-card p-5">
+          <h2 className="text-base font-semibold mb-3">Job Description</h2>
+          <Markdown>{opportunity.jobDescription}</Markdown>
+        </section>
+      )}
+
+      {opportunity.notes && (
+        <section className="rounded-lg border bg-card p-5">
+          <h2 className="text-base font-semibold mb-3">Notes</h2>
+          <Markdown>{opportunity.notes}</Markdown>
+        </section>
+      )}
+
+      {history.length > 0 && (
+        <section className="rounded-lg border bg-card p-5">
+          <h2 className="text-base font-semibold mb-4">Status Timeline</h2>
+          <div className="space-y-3">
+            {history.map((entry) => (
+              <div key={entry.id} className="flex items-start gap-3 text-sm">
+                <span
+                  className={`mt-1.5 inline-block w-2 h-2 rounded-full shrink-0 ${
+                    STATUS_DOT_COLORS[entry.status as Status] ?? "bg-gray-400"
+                  }`}
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-foreground">
+                    {STATUS_LABELS[entry.status as Status] ?? entry.status}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(entry.changedAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                  {entry.note && (
+                    <div className="text-sm text-foreground mt-1">{entry.note}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-5xl">
       <nav className="text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">
           Applications
@@ -54,173 +174,25 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
         </span>
       </nav>
 
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold">{opportunity.company}</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1 min-w-0">
+          <h1 className="text-3xl font-bold tracking-tight">{opportunity.company}</h1>
           <p className="text-lg text-muted-foreground">{opportunity.role}</p>
         </div>
-        <StatusBadge
-          status={opportunity.status as Status}
-          opportunityId={opportunity.id}
-        />
+        <div className="flex items-center gap-2 shrink-0">
+          <StatusBadge
+            status={opportunity.status as Status}
+            opportunityId={opportunity.id}
+          />
+          <OpportunityActions id={opportunity.id} />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        {locationDisplay && (
-          <div>
-            <span className="font-medium">Location:</span> {locationDisplay}
-          </div>
-        )}
-        {opportunity.department && (
-          <div>
-            <span className="font-medium">Department:</span>{" "}
-            {opportunity.department}
-          </div>
-        )}
-        {opportunity.employmentType && (
-          <div>
-            <span className="font-medium">Employment Type:</span>{" "}
-            {EMPLOYMENT_TYPE_LABELS[opportunity.employmentType as EmploymentType] ?? opportunity.employmentType}
-          </div>
-        )}
-        {opportunity.experienceLevel && (
-          <div>
-            <span className="font-medium">Experience Level:</span>{" "}
-            {EXPERIENCE_LEVEL_LABELS[opportunity.experienceLevel as ExperienceLevel] ?? opportunity.experienceLevel}
-          </div>
-        )}
-        {opportunity.jobId && (
-          <div>
-            <span className="font-medium">Job ID:</span> {opportunity.jobId}
-          </div>
-        )}
-        {opportunity.url && (
-          <div>
-            <span className="font-medium">Posting:</span>{" "}
-            <a
-              href={opportunity.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline"
-            >
-              View posting
-            </a>
-          </div>
-        )}
-        {(opportunity.salaryMin || opportunity.salaryMax) && (
-          <div>
-            <span className="font-medium">Salary:</span>{" "}
-            {opportunity.salaryMin &&
-              `$${opportunity.salaryMin.toLocaleString()}`}
-            {opportunity.salaryMin && opportunity.salaryMax && " - "}
-            {opportunity.salaryMax &&
-              `$${opportunity.salaryMax.toLocaleString()}`}
-          </div>
-        )}
-        {opportunity.contactName && (
-          <div>
-            <span className="font-medium">Contact:</span>{" "}
-            {opportunity.contactName}
-          </div>
-        )}
-        {opportunity.datePosted && (
-          <div>
-            <span className="font-medium">Date Posted:</span>{" "}
-            {opportunity.datePosted}
-          </div>
-        )}
-        {opportunity.appliedAt && (
-          <div>
-            <span className="font-medium">Applied:</span>{" "}
-            {opportunity.appliedAt}
-          </div>
-        )}
-        {opportunity.respondedAt && (
-          <div>
-            <span className="font-medium">Responded:</span>{" "}
-            {opportunity.respondedAt}
-          </div>
-        )}
-      </div>
+      <div className="lg:hidden">{sidebar}</div>
 
-      {opportunity.jobDescription && (
-        <div>
-          <h2 className="font-medium mb-2">Job Description</h2>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {opportunity.jobDescription}
-          </p>
-        </div>
-      )}
-
-      {opportunity.notes && (
-        <div>
-          <h2 className="font-medium mb-2">Notes</h2>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {opportunity.notes}
-          </p>
-        </div>
-      )}
-
-      {history.length > 0 && (
-        <div>
-          <h2 className="font-medium mb-3">Status Timeline</h2>
-          <div className="space-y-3">
-            {history.map((entry) => (
-              <div key={entry.id} className="flex items-start gap-3 text-sm">
-                <div className="mt-0.5">
-                  <span
-                    className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[entry.status as Status] ?? "bg-gray-100 text-gray-800"}`}
-                  >
-                    {STATUS_LABELS[entry.status as Status] ?? entry.status}
-                  </span>
-                </div>
-                <div className="text-muted-foreground">
-                  {new Date(entry.changedAt).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                  {entry.note && (
-                    <span className="ml-2 text-foreground">{entry.note}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex gap-3 pt-4 border-t">
-        <Link href={`/opportunities/${opportunity.id}/edit`}>
-          <Button>Edit</Button>
-        </Link>
-        <form
-          action={async () => {
-            "use server";
-            await archiveOpportunity(id);
-            redirect("/");
-          }}
-        >
-          <Button variant="outline" type="submit">
-            Archive
-          </Button>
-        </form>
-        <form
-          action={async () => {
-            "use server";
-            await deleteOpportunity(id);
-            redirect("/");
-          }}
-        >
-          <Button variant="destructive" type="submit">
-            Delete
-          </Button>
-        </form>
-        <Link href="/" className="ml-auto">
-          <Button variant="ghost">Back</Button>
-        </Link>
+      <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+        <div className="lg:col-span-2">{mainContent}</div>
+        <aside className="hidden lg:block lg:col-span-1">{sidebar}</aside>
       </div>
     </div>
   );
