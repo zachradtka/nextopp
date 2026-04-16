@@ -10,7 +10,7 @@ Built with Next.js, SQLite, and Tailwind CSS.
 - Filter by status (Saved, Applied, Interviewing, Offered, Rejected, Withdrawn, Accepted)
 - Update status inline from the dashboard
 - Archive or delete opportunities you no longer need
-- Optional GitHub authentication
+- Optional authentication (GitHub, Google, LinkedIn, or email magic link)
 
 ## Getting Started
 
@@ -53,21 +53,75 @@ Open [http://localhost:3000](http://localhost:3000) and start tracking.
 
 ## Authentication (Optional)
 
-By default, auth is disabled so you can use the app immediately. To enable GitHub OAuth:
+By default, auth is disabled so you can use the app immediately. To enable authentication, set `AUTH_DISABLED=false` and configure one or more providers below. Only providers with credentials configured will appear on the sign-in page.
+
+All providers require an `AUTH_SECRET`:
+
+```bash
+AUTH_DISABLED=false
+AUTH_SECRET=your-random-secret  # Generate with: npx auth secret
+```
+
+### GitHub
 
 1. Create a GitHub OAuth App at [github.com/settings/developers](https://github.com/settings/developers)
    - Set the callback URL to `http://localhost:3000/api/auth/callback/github`
 
-2. Update `.env.local`:
+2. Add to `.env.local`:
 
 ```bash
-AUTH_DISABLED=false
 AUTH_GITHUB_ID=your-client-id
 AUTH_GITHUB_SECRET=your-client-secret
-AUTH_SECRET=your-random-secret  # Generate with: npx auth secret
 ```
 
-3. Restart the dev server.
+### Google
+
+1. Create OAuth credentials in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   - Create an OAuth 2.0 Client ID (Web application type)
+   - Add `http://localhost:3000/api/auth/callback/google` as an authorized redirect URI
+
+2. Add to `.env.local`:
+
+```bash
+AUTH_GOOGLE_ID=your-client-id
+AUTH_GOOGLE_SECRET=your-client-secret
+```
+
+### LinkedIn
+
+1. Create an app in the [LinkedIn Developer Portal](https://www.linkedin.com/developers/apps)
+   - Under **Auth**, add `http://localhost:3000/api/auth/callback/linkedin` as an authorized redirect URL
+   - Request the **Sign In with LinkedIn using OpenID Connect** product
+
+2. Add to `.env.local`:
+
+```bash
+AUTH_LINKEDIN_ID=your-client-id
+AUTH_LINKEDIN_SECRET=your-client-secret
+```
+
+### Email Magic Link
+
+Passwordless sign-in via email using [Resend](https://resend.com).
+
+1. Create an account at [resend.com](https://resend.com) and get an API key
+
+2. Add to `.env.local`:
+
+```bash
+AUTH_RESEND_KEY=your-api-key
+AUTH_EMAIL_FROM="Opportunity Tracker <noreply@yourdomain.com>"  # optional, defaults to noreply@resend.dev
+```
+
+### Restricting Access
+
+To limit who can sign in, set `ALLOWED_USERS` to a comma-separated list of GitHub usernames or email addresses:
+
+```bash
+ALLOWED_USERS=githubuser,someone@example.com
+```
+
+Leave it empty to allow anyone who can authenticate with a configured provider.
 
 ## Deploy to Vercel
 
@@ -112,18 +166,22 @@ TURSO_DATABASE_URL=<your-url> TURSO_AUTH_TOKEN=<your-token> npm run db:push
 
 Once your app is deployed and you have your production URL:
 
-1. Create a GitHub OAuth App at [github.com/settings/developers](https://github.com/settings/developers)
-   - **Homepage URL**: your Vercel production URL (e.g. `https://your-app.vercel.app`)
-   - **Authorization callback URL**: `https://your-app.vercel.app/api/auth/callback/github`
+1. Set up one or more auth providers (see [Authentication](#authentication-optional) above), using your production URL for callback URLs (e.g. `https://your-app.vercel.app/api/auth/callback/github`)
 2. Add these environment variables in Vercel:
 
 | Variable | Value |
 |----------|-------|
 | `AUTH_DISABLED` | `false` |
-| `AUTH_GITHUB_ID` | Your GitHub OAuth client ID |
-| `AUTH_GITHUB_SECRET` | Your GitHub OAuth client secret |
 | `AUTH_SECRET` | Generate with `npx auth secret` |
-| `ALLOWED_USERS` | Comma-separated GitHub usernames (leave empty to allow all) |
+| `AUTH_GITHUB_ID` | GitHub OAuth client ID (optional) |
+| `AUTH_GITHUB_SECRET` | GitHub OAuth client secret (optional) |
+| `AUTH_GOOGLE_ID` | Google OAuth client ID (optional) |
+| `AUTH_GOOGLE_SECRET` | Google OAuth client secret (optional) |
+| `AUTH_LINKEDIN_ID` | LinkedIn OAuth client ID (optional) |
+| `AUTH_LINKEDIN_SECRET` | LinkedIn OAuth client secret (optional) |
+| `AUTH_RESEND_KEY` | Resend API key for email magic link (optional) |
+| `AUTH_EMAIL_FROM` | Email sender address (optional) |
+| `ALLOWED_USERS` | Comma-separated GitHub usernames or emails (leave empty to allow all) |
 
 3. Redeploy from the Vercel dashboard
 
