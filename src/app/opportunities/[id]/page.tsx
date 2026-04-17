@@ -3,14 +3,14 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
 import { Markdown } from "@/components/markdown";
 import { OpportunityActions } from "@/components/opportunity-actions";
+import { OpportunityTimeline } from "@/components/opportunity-timeline";
 import {
   getOpportunity,
   getStatusHistory,
+  getComments,
 } from "@/lib/actions/opportunities";
 import type { Status, WorkMode, EmploymentType, ExperienceLevel } from "@/lib/constants";
 import {
-  STATUS_LABELS,
-  STATUS_DOT_COLORS,
   WORK_MODE_LABELS,
   EMPLOYMENT_TYPE_LABELS,
   EXPERIENCE_LEVEL_LABELS,
@@ -33,14 +33,16 @@ interface PageProps {
 
 export default async function OpportunityDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [opportunity, history] = await Promise.all([
-    getOpportunity(id),
-    getStatusHistory(id),
-  ]);
+  const opportunity = await getOpportunity(id);
 
   if (!opportunity) {
     notFound();
   }
+
+  const [history, comments] = await Promise.all([
+    getStatusHistory(id),
+    getComments(id),
+  ]);
 
   const locationDisplay = [
     opportunity.workMode
@@ -119,46 +121,11 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
         </section>
       )}
 
-      {opportunity.notes && (
-        <section className="rounded-lg border bg-card p-5">
-          <h2 className="text-base font-semibold mb-3">Notes</h2>
-          <Markdown>{opportunity.notes}</Markdown>
-        </section>
-      )}
-
-      {history.length > 0 && (
-        <section className="rounded-lg border bg-card p-5">
-          <h2 className="text-base font-semibold mb-4">Status Timeline</h2>
-          <div className="space-y-3">
-            {history.map((entry) => (
-              <div key={entry.id} className="flex items-start gap-3 text-sm">
-                <span
-                  className={`mt-1.5 inline-block w-2 h-2 rounded-full shrink-0 ${
-                    STATUS_DOT_COLORS[entry.status as Status] ?? "bg-gray-400"
-                  }`}
-                />
-                <div className="flex-1">
-                  <div className="font-medium text-foreground">
-                    {STATUS_LABELS[entry.status as Status] ?? entry.status}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(entry.changedAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </div>
-                  {entry.note && (
-                    <div className="text-sm text-foreground mt-1">{entry.note}</div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <OpportunityTimeline
+        opportunityId={opportunity.id}
+        history={history}
+        comments={comments}
+      />
     </div>
   );
 

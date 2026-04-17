@@ -1,13 +1,25 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { opportunities, statusHistory } from "@/lib/db/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { opportunities, statusHistory, opportunityComments } from "@/lib/db/schema";
+import { eq, asc, desc, and, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 import type { Status } from "@/lib/constants";
 import { requireUserId } from "@/lib/auth-optional";
 import { parseFormData, type OpportunityFormState } from "@/lib/validations/opportunity";
+
+async function assertOpportunityOwnership(opportunityId: string, userId: string) {
+  const rows = await db
+    .select({ id: opportunities.id })
+    .from(opportunities)
+    .where(and(eq(opportunities.id, opportunityId), eq(opportunities.userId, userId)))
+    .limit(1);
+
+  if (!rows[0]) {
+    throw new Error("Opportunity not found");
+  }
+}
 
 async function recordStatusChange(
   opportunityId: string,
@@ -105,7 +117,39 @@ export async function getStatusHistory(opportunityId: string) {
     .select()
     .from(statusHistory)
     .where(eq(statusHistory.opportunityId, opportunityId))
-    .orderBy(desc(statusHistory.changedAt));
+    .orderBy(asc(statusHistory.changedAt));
+}
+
+export async function getComments(opportunityId: string) {
+  const userId = await requireUserId();
+  await assertOpportunityOwnership(opportunityId, userId);
+
+  return db
+    .select()
+    .from(opportunityComments)
+    .where(eq(opportunityComments.opportunityId, opportunityId))
+    .orderBy(asc(opportunityComments.createdAt));
+}
+
+export async function addComment(opportunityId: string, body: string) {
+  const userId = await requireUserId();
+  await assertOpportunityOwnership(opportunityId, userId);
+
+  const trimmed = body.trim();
+  if (!trimmed) {
+    throw new Error("Comment cannot be empty");
+  }
+
+  const now = new Date().toISOString();
+  await db.insert(opportunityComments).values({
+    id: nanoid(),
+    opportunityId,
+    body: trimmed,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  revalidatePath(`/opportunities/${opportunityId}`);
 }
 
 export async function createOpportunity(
@@ -144,7 +188,6 @@ export async function createOpportunity(
     datePosted: data.datePosted,
     contactName: data.contactName,
     jobDescription: data.jobDescription,
-    notes: data.notes,
     appliedAt: data.appliedAt,
     createdAt: now,
     updatedAt: now,
@@ -198,7 +241,6 @@ export async function updateOpportunity(
       datePosted: data.datePosted,
       contactName: data.contactName,
       jobDescription: data.jobDescription,
-      notes: data.notes,
       appliedAt: data.appliedAt,
       respondedAt: data.respondedAt,
       updatedAt: new Date().toISOString(),
@@ -217,6 +259,16 @@ export async function updateOpportunity(
 export async function updateOpportunityStatus(id: string, status: Status) {
   const userId = await requireUserId();
 
+  const existing = await db
+    .select({ status: opportunities.status })
+    .from(opportunities)
+    .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)))
+    .limit(1);
+
+  if (!existing[0] || existing[0].status === status) {
+    return;
+  }
+
   await db
     .update(opportunities)
     .set({
@@ -228,6 +280,7 @@ export async function updateOpportunityStatus(id: string, status: Status) {
   await recordStatusChange(id, status);
 
   revalidatePath("/");
+  revalidatePath(`/opportunities/${id}`);
 }
 
 export async function archiveOpportunity(id: string) {
