@@ -23,6 +23,13 @@ type TimelineEvent =
       body: string;
     };
 
+// On exact timestamp ties, structural events (status changes) render before
+// reactive events (comments) — matches GitHub's timeline behavior.
+const EVENT_PRIORITY: Record<TimelineEvent["kind"], number> = {
+  status: 0,
+  comment: 1,
+};
+
 function buildEvents(
   history: StatusHistory[],
   comments: OpportunityComment[]
@@ -42,9 +49,11 @@ function buildEvents(
     body: entry.body,
   }));
 
-  return [...statusEvents, ...commentEvents].sort((a, b) =>
-    a.timestamp.localeCompare(b.timestamp)
-  );
+  return [...statusEvents, ...commentEvents].sort((a, b) => {
+    const byTime = a.timestamp.localeCompare(b.timestamp);
+    if (byTime !== 0) return byTime;
+    return EVENT_PRIORITY[a.kind] - EVENT_PRIORITY[b.kind];
+  });
 }
 
 function formatAbsolute(timestamp: string) {
@@ -89,7 +98,8 @@ function StatusEvent({
   return (
     <li className="relative pl-8">
       <span
-        className={`absolute left-[13px] top-2 inline-block w-2 h-2 rounded-full ring-4 ring-background ${dotColor}`}
+        aria-hidden
+        className={`absolute left-4 top-2 -translate-x-1/2 inline-block w-2 h-2 rounded-full ring-4 ring-background ${dotColor}`}
       />
       <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
         <span className="text-muted-foreground">Marked as</span>
@@ -118,7 +128,10 @@ function CommentEvent({
 }) {
   return (
     <li className="relative pl-8">
-      <span className="absolute left-[9px] top-2 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground ring-4 ring-background">
+      <span
+        aria-hidden
+        className="absolute left-4 top-2 -translate-x-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground ring-4 ring-background"
+      >
         <MessageSquare className="h-3 w-3" />
       </span>
       <div className="rounded-lg border bg-card">
@@ -151,35 +164,40 @@ export function OpportunityTimeline({
   const events = buildEvents(history, comments);
 
   return (
-    <div className="relative">
+    <section aria-label="Activity" className="relative">
       <span
         aria-hidden
-        className="absolute left-[17px] top-2 bottom-2 w-px bg-border"
+        className="absolute left-4 top-2 bottom-2 -translate-x-1/2 w-px bg-border"
       />
-      <ul className="space-y-5">
-        {events.map((event) =>
-          event.kind === "status" ? (
-            <StatusEvent
-              key={`status-${event.id}`}
-              status={event.status}
-              timestamp={event.timestamp}
-              note={event.note}
-            />
-          ) : (
-            <CommentEvent
-              key={`comment-${event.id}`}
-              body={event.body}
-              timestamp={event.timestamp}
-            />
-          )
-        )}
-        <li className="relative pl-8">
-          <span className="absolute left-[9px] top-2 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground ring-4 ring-background">
-            <MessageSquare className="h-3 w-3" />
-          </span>
-          <CommentComposer opportunityId={opportunityId} />
-        </li>
-      </ul>
-    </div>
+      {events.length > 0 && (
+        <ul className="space-y-5">
+          {events.map((event) =>
+            event.kind === "status" ? (
+              <StatusEvent
+                key={`status-${event.id}`}
+                status={event.status}
+                timestamp={event.timestamp}
+                note={event.note}
+              />
+            ) : (
+              <CommentEvent
+                key={`comment-${event.id}`}
+                body={event.body}
+                timestamp={event.timestamp}
+              />
+            )
+          )}
+        </ul>
+      )}
+      <div className={`relative pl-8 ${events.length > 0 ? "mt-5" : ""}`}>
+        <span
+          aria-hidden
+          className="absolute left-4 top-2 -translate-x-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground ring-4 ring-background"
+        >
+          <MessageSquare className="h-3 w-3" />
+        </span>
+        <CommentComposer opportunityId={opportunityId} />
+      </div>
+    </section>
   );
 }

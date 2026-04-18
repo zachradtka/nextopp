@@ -265,7 +265,10 @@ export async function updateOpportunityStatus(id: string, status: Status) {
     .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)))
     .limit(1);
 
-  if (!existing[0] || existing[0].status === status) {
+  if (!existing[0]) {
+    throw new Error("Opportunity not found");
+  }
+  if (existing[0].status === status) {
     return;
   }
 
