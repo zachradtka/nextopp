@@ -78,7 +78,6 @@ export const opportunities = sqliteTable(
     datePosted: text("date_posted"),
     contactName: text("contact_name"),
     jobDescription: text("job_description"),
-    notes: text("notes"),
     appliedAt: text("applied_at"),
     respondedAt: text("responded_at"),
     createdAt: text("created_at")
@@ -117,6 +116,29 @@ export const statusHistory = sqliteTable(
   ]
 );
 
+export const opportunityComments = sqliteTable(
+  "opportunity_comments",
+  {
+    id: text("id").primaryKey(),
+    opportunityId: text("opportunity_id")
+      .notNull()
+      .references(() => opportunities.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    index("idx_opportunity_comments_opp_created").on(
+      table.opportunityId,
+      table.createdAt
+    ),
+  ]
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Account = typeof accounts.$inferSelect;
@@ -125,3 +147,5 @@ export type Opportunity = typeof opportunities.$inferSelect;
 export type NewOpportunity = typeof opportunities.$inferInsert;
 export type StatusHistory = typeof statusHistory.$inferSelect;
 export type NewStatusHistory = typeof statusHistory.$inferInsert;
+export type OpportunityComment = typeof opportunityComments.$inferSelect;
+export type NewOpportunityComment = typeof opportunityComments.$inferInsert;

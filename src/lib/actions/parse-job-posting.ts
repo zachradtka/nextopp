@@ -36,7 +36,6 @@ Rules:
 - Use salaryMin and salaryMax as yearly whole-number amounts in USD when the posting gives a clear annual range.
 - Use datePosted in YYYY-MM-DD format only when the exact date is available.
 - Put the main job posting text in jobDescription when available.
-- Put useful extra context that does not fit elsewhere into notes.
 - Do not invent details.
 `;
 
@@ -268,7 +267,6 @@ function normalizeParsedJobPosting(
     jobId: normalizeWhitespace(data.jobId),
     contactName: normalizeWhitespace(data.contactName),
     jobDescription: normalizeWhitespace(data.jobDescription),
-    notes: normalizeWhitespace(data.notes),
   };
 
   if (input.sourceType === "url") {

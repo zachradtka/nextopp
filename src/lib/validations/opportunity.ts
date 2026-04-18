@@ -72,10 +72,6 @@ export const opportunitySchema = z.object({
     .string()
     .optional()
     .transform((v) => v || null),
-  notes: z
-    .string()
-    .optional()
-    .transform((v) => v || null),
   appliedAt: z
     .string()
     .optional()
@@ -177,7 +173,6 @@ export function parseFormData(formData: FormData) {
     datePosted: getOptionalFormValue(formData, "datePosted"),
     contactName: getOptionalFormValue(formData, "contactName"),
     jobDescription: getOptionalFormValue(formData, "jobDescription"),
-    notes: getOptionalFormValue(formData, "notes"),
     appliedAt: getOptionalFormValue(formData, "appliedAt"),
     respondedAt: getOptionalFormValue(formData, "respondedAt"),
   });

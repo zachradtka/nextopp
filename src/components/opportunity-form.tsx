@@ -79,7 +79,6 @@ export function OpportunityForm({
     appliedAt: opportunity?.appliedAt ?? "",
     respondedAt: opportunity?.respondedAt ?? "",
     jobDescription: opportunity?.jobDescription ?? "",
-    notes: opportunity?.notes ?? "",
   });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
@@ -199,7 +198,6 @@ export function OpportunityForm({
       contactName: parsed.contactName ?? "",
       datePosted: parsed.datePosted ?? "",
       jobDescription: parsed.jobDescription ?? "",
-      notes: parsed.notes ?? "",
     }));
   }, []);
 
@@ -537,18 +535,6 @@ export function OpportunityForm({
           onChange={handleChange("jobDescription")}
           placeholder="Paste the full job posting here (description, responsibilities, requirements)..."
           className="resize-y"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea
-          id="notes"
-          name="notes"
-          rows={4}
-          value={values.notes}
-          onChange={handleChange("notes")}
-          placeholder="Interview notes, contacts, etc."
         />
       </div>
 

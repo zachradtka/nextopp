@@ -57,7 +57,6 @@ export const parsedJobPostingSchema = z.object({
   datePosted: optionalIsoDateString(),
   contactName: optionalTrimmedString(),
   jobDescription: optionalTrimmedString(),
-  notes: optionalTrimmedString(),
 });
 
 export type ParsedJobPosting = z.infer<typeof parsedJobPostingSchema>;
