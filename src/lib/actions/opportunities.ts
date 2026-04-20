@@ -173,6 +173,8 @@ export async function createOpportunity(
   const data = result.data;
   const id = nanoid();
   const now = new Date().toISOString();
+  const appliedAt =
+    data.status === "applied" && !data.appliedAt ? todayIsoDate() : data.appliedAt;
 
   await db.insert(opportunities).values({
     id,
@@ -192,7 +194,7 @@ export async function createOpportunity(
     datePosted: data.datePosted,
     contactName: data.contactName,
     jobDescription: data.jobDescription,
-    appliedAt: data.appliedAt,
+    appliedAt,
     createdAt: now,
     updatedAt: now,
   });
