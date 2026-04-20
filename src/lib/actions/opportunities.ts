@@ -35,6 +35,10 @@ async function recordStatusChange(
   });
 }
 
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export async function getStatusCounts(
   showArchived = false,
   search?: string
@@ -223,6 +227,12 @@ export async function updateOpportunity(
     .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)))
     .limit(1);
 
+  const statusChanged = existing[0] && existing[0].status !== data.status;
+  const appliedAt =
+    statusChanged && data.status === "applied" && !data.appliedAt
+      ? todayIsoDate()
+      : data.appliedAt;
+
   await db
     .update(opportunities)
     .set({
@@ -241,13 +251,13 @@ export async function updateOpportunity(
       datePosted: data.datePosted,
       contactName: data.contactName,
       jobDescription: data.jobDescription,
-      appliedAt: data.appliedAt,
+      appliedAt,
       respondedAt: data.respondedAt,
       updatedAt: new Date().toISOString(),
     })
     .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)));
 
-  if (existing[0] && existing[0].status !== data.status) {
+  if (statusChanged) {
     await recordStatusChange(id, data.status);
   }
 
@@ -260,7 +270,7 @@ export async function updateOpportunityStatus(id: string, status: Status) {
   const userId = await requireUserId();
 
   const existing = await db
-    .select({ status: opportunities.status })
+    .select({ status: opportunities.status, appliedAt: opportunities.appliedAt })
     .from(opportunities)
     .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)))
     .limit(1);
@@ -276,6 +286,9 @@ export async function updateOpportunityStatus(id: string, status: Status) {
     .update(opportunities)
     .set({
       status,
+      ...(status === "applied" && !existing[0].appliedAt
+        ? { appliedAt: todayIsoDate() }
+        : {}),
       updatedAt: new Date().toISOString(),
     })
     .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)));
