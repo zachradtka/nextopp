@@ -1,16 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  MoreHorizontal,
-  Eye,
-  Pencil,
-  Archive,
-  Trash2,
-  Calendar,
-} from "lucide-react";
+import { Calendar } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -19,18 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 import { StatusBadge } from "@/components/status-badge";
-import {
-  archiveOpportunity,
-  deleteOpportunity,
-} from "@/lib/actions/opportunities";
 import type { Opportunity } from "@/lib/db/schema";
 import type { Status } from "@/lib/constants";
 
@@ -74,74 +54,10 @@ function formatRelativeDate(dateStr: string | null): string {
   return formatDate(dateStr);
 }
 
-function ActionsMenu({
-  opportunityId,
-  router,
-}: {
-  opportunityId: string;
-  router: ReturnType<typeof useRouter>;
-}) {
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger className="p-1 rounded-md hover:bg-accent cursor-pointer">
-          <MoreHorizontal className="size-4" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onClick={() => router.push(`/opportunities/${opportunityId}`)}
-          >
-            <Eye className="size-4 mr-2" />
-            View
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() =>
-              router.push(`/opportunities/${opportunityId}/edit`)
-            }
-          >
-            <Pencil className="size-4 mr-2" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => archiveOpportunity(opportunityId)}
-          >
-            <Archive className="size-4 mr-2" />
-            Archive
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="text-destructive"
-            onClick={() => setConfirmOpen(true)}
-          >
-            <Trash2 className="size-4 mr-2" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Delete Opportunity?"
-        description="This cannot be undone."
-        confirmLabel="Delete"
-        confirmVariant="destructive"
-        onConfirm={() => deleteOpportunity(opportunityId)}
-      />
-    </>
-  );
-}
-
-function MobileCard({
-  opp,
-  router,
-}: {
-  opp: Opportunity;
-  router: ReturnType<typeof useRouter>;
-}) {
+function MobileCard({ opp }: { opp: Opportunity }) {
   return (
     <div className="bg-card rounded-lg border border-border p-4">
-      {/* Top row: Role + Status + Actions */}
+      {/* Top row: Role + Status */}
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/opportunities/${opp.id}`}
@@ -154,13 +70,10 @@ function MobileCard({
             {opp.company}
           </div>
         </Link>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <StatusBadge
-            status={opp.status as Status}
-            opportunityId={opp.id}
-          />
-          <ActionsMenu opportunityId={opp.id} router={router} />
-        </div>
+        <StatusBadge
+          status={opp.status as Status}
+          opportunityId={opp.id}
+        />
       </div>
 
       {/* Divider */}
@@ -181,8 +94,6 @@ function MobileCard({
 }
 
 export function OpportunityTable({ opportunities }: OpportunityTableProps) {
-  const router = useRouter();
-
   if (opportunities.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -201,7 +112,7 @@ export function OpportunityTable({ opportunities }: OpportunityTableProps) {
       {/* Mobile: Card list */}
       <div className="flex flex-col gap-3 md:hidden">
         {opportunities.map((opp) => (
-          <MobileCard key={opp.id} opp={opp} router={router} />
+          <MobileCard key={opp.id} opp={opp} />
         ))}
       </div>
 
@@ -214,7 +125,6 @@ export function OpportunityTable({ opportunities }: OpportunityTableProps) {
               <TableHead>Status</TableHead>
               <TableHead>Applied Date</TableHead>
               <TableHead>Last Contact</TableHead>
-              <TableHead className="w-12">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -244,9 +154,6 @@ export function OpportunityTable({ opportunities }: OpportunityTableProps) {
                 </TableCell>
                 <TableCell className="text-sm font-medium text-muted-foreground">
                   {formatRelativeDate(opp.updatedAt)}
-                </TableCell>
-                <TableCell>
-                  <ActionsMenu opportunityId={opp.id} router={router} />
                 </TableCell>
               </TableRow>
             ))}
