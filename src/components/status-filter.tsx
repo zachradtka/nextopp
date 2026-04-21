@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { STATUSES, STATUS_LABELS, type Status } from "@/lib/constants";
 
 const filters: Array<{ value: Status | "all"; label: string }> = [
-  { value: "all", label: "All Apps" },
+  { value: "all", label: "All" },
   ...STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
 ];
 
@@ -29,7 +29,7 @@ export function StatusFilter({ current, counts, searchParams }: StatusFilterProp
     if (value !== "all") {
       params.set("status", value);
     }
-    router.push(`/?${params.toString()}`);
+    router.push(`/opportunities?${params.toString()}`);
   }
 
   return (

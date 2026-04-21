@@ -25,13 +25,13 @@ export function OpportunitySidebarActions({
     } else {
       await archiveOpportunity(id);
     }
-    router.push("/");
+    router.push("/opportunities");
   };
 
   const handleDelete = async () => {
     if (!confirm("Delete this opportunity? This cannot be undone.")) return;
     await deleteOpportunity(id);
-    router.push("/");
+    router.push("/opportunities");
   };
 
   return (
