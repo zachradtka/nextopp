@@ -44,11 +44,10 @@ export async function getStatusCounts(
   search?: string
 ): Promise<Record<string, number>> {
   const userId = await requireUserId();
-  const conditions = [eq(opportunities.userId, userId)];
-
-  if (!showArchived) {
-    conditions.push(eq(opportunities.archived, 0));
-  }
+  const conditions = [
+    eq(opportunities.userId, userId),
+    eq(opportunities.archived, showArchived ? 1 : 0),
+  ];
 
   if (search) {
     const escaped = search.replace(/[%_\\]/g, "\\$&");
@@ -80,11 +79,10 @@ export async function listOpportunities(
   search?: string
 ) {
   const userId = await requireUserId();
-  const conditions = [eq(opportunities.userId, userId)];
-
-  if (!showArchived) {
-    conditions.push(eq(opportunities.archived, 0));
-  }
+  const conditions = [
+    eq(opportunities.userId, userId),
+    eq(opportunities.archived, showArchived ? 1 : 0),
+  ];
 
   if (statusFilter && statusFilter !== "all") {
     conditions.push(eq(opportunities.status, statusFilter));
