@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import {
@@ -7,6 +8,7 @@ import {
   unarchiveOpportunity,
   deleteOpportunity,
 } from "@/lib/actions/opportunities";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface OpportunitySidebarActionsProps {
   id: string;
@@ -18,6 +20,7 @@ export function OpportunitySidebarActions({
   archived,
 }: OpportunitySidebarActionsProps) {
   const router = useRouter();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleArchiveToggle = async () => {
     if (archived) {
@@ -29,7 +32,6 @@ export function OpportunitySidebarActions({
   };
 
   const handleDelete = async () => {
-    if (!confirm("Delete this opportunity? This cannot be undone.")) return;
     await deleteOpportunity(id);
     router.push("/opportunities");
   };
@@ -51,13 +53,22 @@ export function OpportunitySidebarActions({
         </button>
         <button
           type="button"
-          onClick={handleDelete}
+          onClick={() => setConfirmOpen(true)}
           className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors w-full"
         >
           <Trash2 className="size-4" />
           Delete opportunity
         </button>
       </div>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete Opportunity?"
+        description="This cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="destructive"
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

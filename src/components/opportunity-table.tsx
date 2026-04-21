@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -24,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { StatusBadge } from "@/components/status-badge";
 import {
   archiveOpportunity,
@@ -79,41 +81,54 @@ function ActionsMenu({
   opportunityId: string;
   router: ReturnType<typeof useRouter>;
 }) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="p-1 rounded-md hover:bg-accent cursor-pointer">
-        <MoreHorizontal className="size-4" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          onClick={() => router.push(`/opportunities/${opportunityId}`)}
-        >
-          <Eye className="size-4 mr-2" />
-          View
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() =>
-            router.push(`/opportunities/${opportunityId}/edit`)
-          }
-        >
-          <Pencil className="size-4 mr-2" />
-          Edit
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => archiveOpportunity(opportunityId)}
-        >
-          <Archive className="size-4 mr-2" />
-          Archive
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="text-destructive"
-          onClick={() => deleteOpportunity(opportunityId)}
-        >
-          <Trash2 className="size-4 mr-2" />
-          Delete
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger className="p-1 rounded-md hover:bg-accent cursor-pointer">
+          <MoreHorizontal className="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={() => router.push(`/opportunities/${opportunityId}`)}
+          >
+            <Eye className="size-4 mr-2" />
+            View
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              router.push(`/opportunities/${opportunityId}/edit`)
+            }
+          >
+            <Pencil className="size-4 mr-2" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => archiveOpportunity(opportunityId)}
+          >
+            <Archive className="size-4 mr-2" />
+            Archive
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-destructive"
+            onClick={() => setConfirmOpen(true)}
+          >
+            <Trash2 className="size-4 mr-2" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete Opportunity?"
+        description="This cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="destructive"
+        onConfirm={() => deleteOpportunity(opportunityId)}
+      />
+    </>
   );
 }
 
