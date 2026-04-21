@@ -1,6 +1,6 @@
 import { MessageSquare } from "lucide-react";
-import { Markdown } from "@/components/markdown";
 import { CommentComposer } from "@/components/comment-composer";
+import { TimelineComment } from "@/components/timeline-comment";
 import {
   STATUS_LABELS,
   STATUS_DOT_COLORS,
@@ -21,6 +21,8 @@ type TimelineEvent =
       id: string;
       timestamp: string;
       body: string;
+      createdAt: string;
+      updatedAt: string;
     };
 
 // On exact timestamp ties, structural events (status changes) render before
@@ -47,6 +49,8 @@ function buildEvents(
     id: entry.id,
     timestamp: entry.createdAt,
     body: entry.body,
+    createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
   }));
 
   return [...statusEvents, ...commentEvents].sort((a, b) => {
@@ -119,39 +123,6 @@ function StatusEvent({
   );
 }
 
-function CommentEvent({
-  body,
-  timestamp,
-}: {
-  body: string;
-  timestamp: string;
-}) {
-  return (
-    <li className="relative pl-8">
-      <span
-        aria-hidden
-        className="absolute left-4 top-2 -translate-x-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground ring-4 ring-background"
-      >
-        <MessageSquare className="h-3 w-3" />
-      </span>
-      <div className="rounded-lg border bg-card">
-        <header className="flex items-center justify-between border-b px-4 py-2">
-          <time
-            dateTime={timestamp}
-            title={formatAbsolute(timestamp)}
-            className="text-xs text-muted-foreground"
-          >
-            commented {formatRelative(timestamp)}
-          </time>
-        </header>
-        <div className="px-4 py-3">
-          <Markdown>{body}</Markdown>
-        </div>
-      </div>
-    </li>
-  );
-}
-
 export function OpportunityTimeline({
   opportunityId,
   history,
@@ -180,10 +151,12 @@ export function OpportunityTimeline({
                 note={event.note}
               />
             ) : (
-              <CommentEvent
+              <TimelineComment
                 key={`comment-${event.id}`}
+                id={event.id}
                 body={event.body}
-                timestamp={event.timestamp}
+                createdAt={event.createdAt}
+                updatedAt={event.updatedAt}
               />
             )
           )}
