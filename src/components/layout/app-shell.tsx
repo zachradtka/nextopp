@@ -16,13 +16,15 @@ export function AppShell({ children, user, authEnabled }: AppShellProps) {
 
   return (
     <div className="flex h-full">
-      <Sidebar
-        collapsed={collapsed}
-        onToggle={() => setCollapsed((c) => !c)}
-        authEnabled={authEnabled}
-        mobileOpen={mobileOpen}
-        onMobileClose={() => setMobileOpen(false)}
-      />
+      <Suspense fallback={<aside className="hidden md:block w-64 shrink-0 border-r" />}>
+        <Sidebar
+          collapsed={collapsed}
+          onToggle={() => setCollapsed((c) => !c)}
+          authEnabled={authEnabled}
+          mobileOpen={mobileOpen}
+          onMobileClose={() => setMobileOpen(false)}
+        />
+      </Suspense>
       <div className="flex flex-1 flex-col min-w-0">
         <Suspense fallback={<div className="h-14 shrink-0 border-b" />}>
           <TopBar

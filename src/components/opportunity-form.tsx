@@ -125,7 +125,7 @@ export function OpportunityForm({
   // Navigate on success
   useEffect(() => {
     if (!isEditing && "id" in createState && createState.id && !createState.errors) {
-      router.push("/");
+      router.push("/opportunities");
     }
   }, [createState, isEditing, router]);
 

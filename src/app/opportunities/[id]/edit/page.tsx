@@ -18,8 +18,8 @@ export default async function EditOpportunityPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <nav className="text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground">
-          Applications
+        <Link href="/opportunities" className="hover:text-foreground">
+          Opportunities
         </Link>
         <span className="mx-1.5">&rsaquo;</span>
         <Link

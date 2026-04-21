@@ -44,11 +44,10 @@ export async function getStatusCounts(
   search?: string
 ): Promise<Record<string, number>> {
   const userId = await requireUserId();
-  const conditions = [eq(opportunities.userId, userId)];
-
-  if (!showArchived) {
-    conditions.push(eq(opportunities.archived, 0));
-  }
+  const conditions = [
+    eq(opportunities.userId, userId),
+    eq(opportunities.archived, showArchived ? 1 : 0),
+  ];
 
   if (search) {
     const escaped = search.replace(/[%_\\]/g, "\\$&");
@@ -80,11 +79,10 @@ export async function listOpportunities(
   search?: string
 ) {
   const userId = await requireUserId();
-  const conditions = [eq(opportunities.userId, userId)];
-
-  if (!showArchived) {
-    conditions.push(eq(opportunities.archived, 0));
-  }
+  const conditions = [
+    eq(opportunities.userId, userId),
+    eq(opportunities.archived, showArchived ? 1 : 0),
+  ];
 
   if (statusFilter && statusFilter !== "all") {
     conditions.push(eq(opportunities.status, statusFilter));
@@ -201,7 +199,7 @@ export async function createOpportunity(
 
   await recordStatusChange(id, data.status);
 
-  revalidatePath("/");
+  revalidatePath("/opportunities");
   return { id };
 }
 
@@ -263,7 +261,7 @@ export async function updateOpportunity(
     await recordStatusChange(id, data.status);
   }
 
-  revalidatePath("/");
+  revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${id}`);
   return {};
 }
@@ -297,7 +295,7 @@ export async function updateOpportunityStatus(id: string, status: Status) {
 
   await recordStatusChange(id, status);
 
-  revalidatePath("/");
+  revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${id}`);
 }
 
@@ -312,7 +310,7 @@ export async function archiveOpportunity(id: string) {
     })
     .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)));
 
-  revalidatePath("/");
+  revalidatePath("/opportunities");
 }
 
 export async function unarchiveOpportunity(id: string) {
@@ -326,7 +324,7 @@ export async function unarchiveOpportunity(id: string) {
     })
     .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)));
 
-  revalidatePath("/");
+  revalidatePath("/opportunities");
 }
 
 export async function deleteOpportunity(id: string) {
@@ -336,5 +334,5 @@ export async function deleteOpportunity(id: string) {
     .delete(opportunities)
     .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)));
 
-  revalidatePath("/");
+  revalidatePath("/opportunities");
 }

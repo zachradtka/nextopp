@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   Briefcase,
@@ -18,9 +18,9 @@ import { signOutAction } from "@/lib/actions/auth";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/", label: "Applications", icon: Briefcase },
+  { href: "/opportunities", label: "Opportunities", icon: Briefcase },
   { href: "/insights", label: "Insights", icon: BarChart3 },
-  { href: "/?archived=true", label: "Archive", icon: Archive },
+  { href: "/opportunities?archived=true", label: "Archive", icon: Archive },
 ];
 
 const bottomItems = [
@@ -35,12 +35,12 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
-function isActive(pathname: string, search: string, href: string) {
-  if (href === "/") {
-    return pathname === "/" && !search.includes("archived=true");
+function isActive(pathname: string, archived: boolean, href: string) {
+  if (href === "/opportunities") {
+    return pathname === "/opportunities" && !archived;
   }
-  if (href === "/?archived=true") {
-    return search.includes("archived=true");
+  if (href === "/opportunities?archived=true") {
+    return pathname === "/opportunities" && archived;
   }
   return pathname.startsWith(href);
 }
@@ -90,13 +90,14 @@ export function Sidebar({
   onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
-  const search = typeof window !== "undefined" ? window.location.search : "";
+  const searchParams = useSearchParams();
+  const archived = searchParams.get("archived") === "true";
 
   const sidebarContent = (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       {/* Logo */}
       <div className="flex h-14 items-center border-b border-sidebar-border px-4">
-        <Link href="/" className="flex items-center gap-3" onClick={onMobileClose}>
+        <Link href="/opportunities" className="flex items-center gap-3" onClick={onMobileClose}>
           <Briefcase className="size-6 shrink-0 text-primary" />
           {!collapsed && (
             <div className="flex flex-col">
@@ -121,7 +122,7 @@ export function Sidebar({
           <NavLink
             key={item.href}
             {...item}
-            active={isActive(pathname, search, item.href)}
+            active={isActive(pathname, archived, item.href)}
             collapsed={collapsed}
             onClick={onMobileClose}
           />
