@@ -1,26 +1,30 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import {
   archiveOpportunity,
+  unarchiveOpportunity,
   deleteOpportunity,
 } from "@/lib/actions/opportunities";
 
-export function OpportunityActions({ id }: { id: string }) {
+interface OpportunitySidebarActionsProps {
+  id: string;
+  archived: boolean;
+}
+
+export function OpportunitySidebarActions({
+  id,
+  archived,
+}: OpportunitySidebarActionsProps) {
   const router = useRouter();
 
-  const handleArchive = async () => {
-    await archiveOpportunity(id);
+  const handleArchiveToggle = async () => {
+    if (archived) {
+      await unarchiveOpportunity(id);
+    } else {
+      await archiveOpportunity(id);
+    }
     router.push("/");
   };
 
@@ -31,24 +35,29 @@ export function OpportunityActions({ id }: { id: string }) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <Link href={`/opportunities/${id}/edit`}>
-        <Button>Edit</Button>
-      </Link>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={<Button variant="outline" size="icon" aria-label="More actions" />}
+    <div className="border-t pt-6">
+      <div className="-mx-2 flex flex-col gap-1">
+        <button
+          type="button"
+          onClick={handleArchiveToggle}
+          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors w-full"
         >
-          <MoreHorizontal className="size-4" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={handleArchive}>Archive</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive" onClick={handleDelete}>
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          {archived ? (
+            <ArchiveRestore className="size-4" />
+          ) : (
+            <Archive className="size-4" />
+          )}
+          {archived ? "Unarchive opportunity" : "Archive opportunity"}
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors w-full"
+        >
+          <Trash2 className="size-4" />
+          Delete opportunity
+        </button>
+      </div>
     </div>
   );
 }
