@@ -58,6 +58,7 @@ export function TopBar({ user, onMobileMenuClick }: TopBarProps) {
     const timer = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("archived");
+      params.delete("status");
       if (trimmed) {
         params.set("search", trimmed);
       } else {
@@ -73,6 +74,7 @@ export function TopBar({ user, onMobileMenuClick }: TopBarProps) {
     setValue("");
     const params = new URLSearchParams(searchParams.toString());
     params.delete("archived");
+    params.delete("status");
     params.delete("search");
     router.push(`/opportunities?${params.toString()}`);
   }, [searchParams, router]);
