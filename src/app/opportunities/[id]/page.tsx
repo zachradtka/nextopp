@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { Markdown } from "@/components/markdown";
@@ -54,6 +55,18 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
     .filter(Boolean)
     .join(" · ");
 
+  const viewPostingLink = opportunity.url ? (
+    <a
+      href={opportunity.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+    >
+      <ExternalLink className="size-4" />
+      View job posting
+    </a>
+  ) : null;
+
   const metadataCard = (
     <div>
       <dl className="space-y-4">
@@ -94,18 +107,6 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
         )}
         {opportunity.respondedAt && (
           <Field label="Responded">{opportunity.respondedAt}</Field>
-        )}
-        {opportunity.url && (
-          <Field label="Posting">
-            <a
-              href={opportunity.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline"
-            >
-              View posting
-            </a>
-          </Field>
         )}
       </dl>
     </div>
@@ -168,9 +169,12 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      {viewPostingLink && <div className="lg:hidden">{viewPostingLink}</div>}
+
       <div className="lg:grid lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-2">{mainContent}</div>
-        <aside className="hidden lg:block lg:col-span-1">
+        <aside className="hidden lg:block lg:col-span-1 space-y-4">
+          {viewPostingLink}
           {metadataCard}
           {sidebarActions}
         </aside>
