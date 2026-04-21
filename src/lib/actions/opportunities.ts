@@ -154,6 +154,49 @@ export async function addComment(opportunityId: string, body: string) {
   revalidatePath(`/opportunities/${opportunityId}`);
 }
 
+async function getCommentOpportunityId(commentId: string) {
+  const rows = await db
+    .select({ opportunityId: opportunityComments.opportunityId })
+    .from(opportunityComments)
+    .where(eq(opportunityComments.id, commentId))
+    .limit(1);
+
+  if (!rows[0]) {
+    throw new Error("Comment not found");
+  }
+  return rows[0].opportunityId;
+}
+
+export async function updateComment(commentId: string, body: string) {
+  const userId = await requireUserId();
+  const opportunityId = await getCommentOpportunityId(commentId);
+  await assertOpportunityOwnership(opportunityId, userId);
+
+  const trimmed = body.trim();
+  if (!trimmed) {
+    throw new Error("Comment cannot be empty");
+  }
+
+  await db
+    .update(opportunityComments)
+    .set({ body: trimmed, updatedAt: new Date().toISOString() })
+    .where(eq(opportunityComments.id, commentId));
+
+  revalidatePath(`/opportunities/${opportunityId}`);
+}
+
+export async function deleteComment(commentId: string) {
+  const userId = await requireUserId();
+  const opportunityId = await getCommentOpportunityId(commentId);
+  await assertOpportunityOwnership(opportunityId, userId);
+
+  await db
+    .delete(opportunityComments)
+    .where(eq(opportunityComments.id, commentId));
+
+  revalidatePath(`/opportunities/${opportunityId}`);
+}
+
 export async function createOpportunity(
   prevState: OpportunityFormState,
   formData: FormData
