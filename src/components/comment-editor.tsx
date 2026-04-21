@@ -17,11 +17,13 @@ export function CommentEditor({
 }: CommentEditorProps) {
   const [body, setBody] = useState(initialBody);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const trimmed = body.trim();
+  const busy = isPending || saved;
   const canSave =
-    trimmed.length > 0 && trimmed !== initialBody.trim() && !isPending;
+    trimmed.length > 0 && trimmed !== initialBody.trim() && !busy;
 
   function handleSave() {
     if (!canSave) return;
@@ -29,6 +31,7 @@ export function CommentEditor({
     startTransition(async () => {
       try {
         await onSave(trimmed);
+        setSaved(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to update comment");
       }
@@ -41,7 +44,7 @@ export function CommentEditor({
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={4}
-        disabled={isPending}
+        disabled={busy}
         className="resize-y"
         autoFocus
       />
@@ -51,12 +54,12 @@ export function CommentEditor({
           type="button"
           variant="outline"
           onClick={onCancel}
-          disabled={isPending}
+          disabled={busy}
         >
           Cancel
         </Button>
         <Button type="button" onClick={handleSave} disabled={!canSave}>
-          {isPending ? "Saving..." : "Save"}
+          {busy ? "Saving..." : "Save"}
         </Button>
       </div>
     </div>

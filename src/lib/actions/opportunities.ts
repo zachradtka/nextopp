@@ -154,11 +154,20 @@ export async function addComment(opportunityId: string, body: string) {
   revalidatePath(`/opportunities/${opportunityId}`);
 }
 
-async function getCommentOpportunityId(commentId: string) {
+async function getOwnedCommentOpportunityId(commentId: string, userId: string) {
   const rows = await db
     .select({ opportunityId: opportunityComments.opportunityId })
     .from(opportunityComments)
-    .where(eq(opportunityComments.id, commentId))
+    .innerJoin(
+      opportunities,
+      eq(opportunities.id, opportunityComments.opportunityId)
+    )
+    .where(
+      and(
+        eq(opportunityComments.id, commentId),
+        eq(opportunities.userId, userId)
+      )
+    )
     .limit(1);
 
   if (!rows[0]) {
@@ -169,8 +178,7 @@ async function getCommentOpportunityId(commentId: string) {
 
 export async function updateComment(commentId: string, body: string) {
   const userId = await requireUserId();
-  const opportunityId = await getCommentOpportunityId(commentId);
-  await assertOpportunityOwnership(opportunityId, userId);
+  const opportunityId = await getOwnedCommentOpportunityId(commentId, userId);
 
   const trimmed = body.trim();
   if (!trimmed) {
@@ -187,8 +195,7 @@ export async function updateComment(commentId: string, body: string) {
 
 export async function deleteComment(commentId: string) {
   const userId = await requireUserId();
-  const opportunityId = await getCommentOpportunityId(commentId);
-  await assertOpportunityOwnership(opportunityId, userId);
+  const opportunityId = await getOwnedCommentOpportunityId(commentId, userId);
 
   await db
     .delete(opportunityComments)
