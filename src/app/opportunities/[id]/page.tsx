@@ -173,14 +173,14 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
 
       <div className="lg:grid lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-2">{mainContent}</div>
-        <aside className="hidden lg:block lg:col-span-1 space-y-4">
+        <aside className="hidden lg:block lg:col-span-1 space-y-6">
           {viewPostingLink}
           {metadataCard}
           {sidebarActions}
         </aside>
       </div>
 
-      <div className="lg:hidden mt-6 border-t pt-6">{metadataCard}</div>
+      <div className="lg:hidden border-t pt-6">{metadataCard}</div>
       <div className="lg:hidden">{sidebarActions}</div>
     </div>
   );

@@ -35,7 +35,7 @@ export function OpportunitySidebarActions({
   };
 
   return (
-    <div className="mt-6 border-t pt-6">
+    <div className="border-t pt-6">
       <div className="-mx-2 flex flex-col gap-1">
         <button
           type="button"
