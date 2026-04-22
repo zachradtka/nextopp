@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquare, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Markdown } from "@/components/markdown";
 import { CommentEditor } from "@/components/comment-editor";
 import {
@@ -76,13 +76,7 @@ export function TimelineComment({
   }
 
   return (
-    <li className="relative pl-8">
-      <span
-        aria-hidden
-        className="absolute left-4 top-2 -translate-x-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground ring-4 ring-background"
-      >
-        <MessageSquare className="h-3 w-3" />
-      </span>
+    <li className="relative">
       <div className="rounded-lg border bg-card">
         <header className="flex items-center justify-between border-b px-4 py-2">
           <div className="flex items-baseline gap-1.5">

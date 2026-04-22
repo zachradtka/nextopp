@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { MarkdownEditor } from "@/components/markdown-editor";
 import { addComment } from "@/lib/actions/opportunities";
 
 export function CommentComposer({ opportunityId }: { opportunityId: string }) {
@@ -27,25 +27,19 @@ export function CommentComposer({ opportunityId }: { opportunityId: string }) {
   }
 
   return (
-    <div className="rounded-lg border bg-card">
-      <div className="px-4 py-3">
-        <Textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          rows={4}
-          placeholder="Leave a comment. Markdown supported."
-          disabled={isPending}
-          className="resize-y"
-        />
-        {error && (
-          <p className="mt-2 text-sm text-destructive">{error}</p>
-        )}
-      </div>
-      <footer className="flex items-center justify-end border-t px-4 py-2">
+    <>
+      <MarkdownEditor
+        value={body}
+        onChange={setBody}
+        placeholder="Use Markdown to format your comment"
+        disabled={isPending}
+      />
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+      <div className="mt-3 flex items-center justify-end">
         <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
           {isPending ? "Commenting..." : "Comment"}
         </Button>
-      </footer>
-    </div>
+      </div>
+    </>
   );
 }
