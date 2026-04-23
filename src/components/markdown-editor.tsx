@@ -79,14 +79,25 @@ export function MarkdownEditor({
   const [tab, setTab] = useState<Tab>("write");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const orchestratorRef = useRef<TextAreaCommandOrchestrator | null>(null);
+  const didInitialFocusRef = useRef(false);
 
   useEffect(() => {
-    if (tab === "write" && textareaRef.current) {
-      orchestratorRef.current = new TextAreaCommandOrchestrator(
-        textareaRef.current
-      );
+    if (tab !== "write" || !textareaRef.current) return;
+
+    orchestratorRef.current = new TextAreaCommandOrchestrator(
+      textareaRef.current
+    );
+    // Only autofocus on the very first mount — don't re-steal focus
+    // on every Preview → Write round trip.
+    if (autoFocus && !didInitialFocusRef.current) {
+      textareaRef.current.focus();
+      didInitialFocusRef.current = true;
     }
-  }, [tab]);
+
+    return () => {
+      orchestratorRef.current = null;
+    };
+  }, [tab, autoFocus]);
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -176,7 +187,6 @@ export function MarkdownEditor({
           onKeyDown={onKeyDown}
           placeholder={placeholder}
           disabled={disabled}
-          autoFocus={autoFocus}
           style={{ minHeight }}
           className="block w-full resize-y bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground outline-none disabled:cursor-not-allowed disabled:opacity-50"
         />

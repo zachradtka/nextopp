@@ -120,6 +120,8 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
   );
 
   const mainContent = (
+    // Timeline line uses `-top-6` to reach up into this `space-y-6` gap;
+    // keep the two in sync.
     <div className="space-y-6">
       {opportunity.jobDescription && (
         <section className="rounded-lg border bg-card p-5">

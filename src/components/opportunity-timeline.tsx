@@ -137,6 +137,9 @@ export function OpportunityTimeline({
     <section aria-label="Activity">
       {events.length > 0 && (
         <div className="relative">
+          {/* `-top-6` reaches up into the 24px gap created by the parent's
+              `space-y-6` so the line visually terminates at the description
+              card's bottom edge. If that gap changes, update this value. */}
           <span
             aria-hidden
             className="absolute left-4 -top-6 bottom-2 -translate-x-1/2 w-px bg-border"
