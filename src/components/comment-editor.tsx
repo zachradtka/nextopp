@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { MarkdownEditor } from "@/components/markdown-editor";
 
 interface CommentEditorProps {
   initialBody: string;
@@ -40,12 +40,10 @@ export function CommentEditor({
 
   return (
     <div>
-      <Textarea
+      <MarkdownEditor
         value={body}
-        onChange={(e) => setBody(e.target.value)}
-        rows={4}
+        onChange={setBody}
         disabled={busy}
-        className="resize-y"
         autoFocus
       />
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}

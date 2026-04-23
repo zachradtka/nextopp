@@ -1,4 +1,3 @@
-import { MessageSquare } from "lucide-react";
 import { CommentComposer } from "@/components/comment-composer";
 import { TimelineComment } from "@/components/timeline-comment";
 import {
@@ -135,40 +134,40 @@ export function OpportunityTimeline({
   const events = buildEvents(history, comments);
 
   return (
-    <section aria-label="Activity" className="relative">
-      <span
-        aria-hidden
-        className="absolute left-4 top-2 bottom-2 -translate-x-1/2 w-px bg-border"
-      />
+    <section aria-label="Activity">
       {events.length > 0 && (
-        <ul className="space-y-5">
-          {events.map((event) =>
-            event.kind === "status" ? (
-              <StatusEvent
-                key={`status-${event.id}`}
-                status={event.status}
-                timestamp={event.timestamp}
-                note={event.note}
-              />
-            ) : (
-              <TimelineComment
-                key={`comment-${event.id}`}
-                id={event.id}
-                body={event.body}
-                createdAt={event.createdAt}
-                updatedAt={event.updatedAt}
-              />
-            )
-          )}
-        </ul>
+        <div className="relative">
+          {/* `-top-6` reaches up into the 24px gap created by the parent's
+              `space-y-6` so the line visually terminates at the description
+              card's bottom edge. If that gap changes, update this value. */}
+          <span
+            aria-hidden
+            className="absolute left-4 -top-6 bottom-2 -translate-x-1/2 w-px bg-border"
+          />
+          <ul className="space-y-5">
+            {events.map((event) =>
+              event.kind === "status" ? (
+                <StatusEvent
+                  key={`status-${event.id}`}
+                  status={event.status}
+                  timestamp={event.timestamp}
+                  note={event.note}
+                />
+              ) : (
+                <TimelineComment
+                  key={`comment-${event.id}`}
+                  id={event.id}
+                  body={event.body}
+                  createdAt={event.createdAt}
+                  updatedAt={event.updatedAt}
+                />
+              )
+            )}
+          </ul>
+        </div>
       )}
-      <div className={`relative pl-8 ${events.length > 0 ? "mt-5" : ""}`}>
-        <span
-          aria-hidden
-          className="absolute left-4 top-2 -translate-x-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground ring-4 ring-background"
-        >
-          <MessageSquare className="h-3 w-3" />
-        </span>
+      <div className={events.length > 0 ? "mt-5" : ""}>
+        <h3 className="text-base font-semibold mb-3">Add a comment</h3>
         <CommentComposer opportunityId={opportunityId} />
       </div>
     </section>
