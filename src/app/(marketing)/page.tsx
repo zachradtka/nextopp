@@ -49,7 +49,7 @@ export default async function LandingPage() {
           conversation along the way — all in one place.
         </p>
         <div className="mt-8">
-          <Link href="/api/auth/signin">
+          <Link href="/login">
             <Button size="lg" className="h-11 px-6 text-base">
               Sign in to get started
             </Button>
