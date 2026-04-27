@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Briefcase, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { SignInButton } from "./sign-in-button";
 
 export default function MarketingLayout({
   children,
@@ -18,11 +18,7 @@ export default function MarketingLayout({
             <Briefcase className="size-5 shrink-0 text-primary sm:size-6" />
             <span>Opportunity Tracker</span>
           </Link>
-          <Link href="/login">
-            <Button size="sm" className="sm:h-8 sm:px-3">
-              Sign in
-            </Button>
-          </Link>
+          <SignInButton />
         </div>
       </header>
 
