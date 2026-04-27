@@ -6,7 +6,11 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  if (!req.auth && !req.nextUrl.pathname.startsWith("/api/auth")) {
+  const { pathname } = req.nextUrl;
+  const isPublicPath =
+    pathname === "/" || pathname.startsWith("/api/auth");
+
+  if (!req.auth && !isPublicPath) {
     const signInUrl = new URL("/api/auth/signin", req.nextUrl.origin);
     return NextResponse.redirect(signInUrl);
   }

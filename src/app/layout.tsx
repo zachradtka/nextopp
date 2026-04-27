@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Manrope, Geist_Mono } from "next/font/google";
-import { getOptionalSession, isAuthEnabled } from "@/lib/auth-optional";
-import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -19,26 +17,17 @@ export const metadata: Metadata = {
   description: "Track your job search opportunities",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getOptionalSession();
-
   return (
     <html
       lang="en"
       className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="h-full overflow-hidden">
-        <AppShell
-          user={session?.user ?? null}
-          authEnabled={isAuthEnabled()}
-        >
-          {children}
-        </AppShell>
-      </body>
+      <body className="h-full overflow-hidden">{children}</body>
     </html>
   );
 }
