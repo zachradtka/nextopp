@@ -6,13 +6,16 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  const { pathname } = req.nextUrl;
+  const { pathname, search } = req.nextUrl;
   const isPublicPath =
-    pathname === "/" || pathname.startsWith("/api/auth");
+    pathname === "/" ||
+    pathname === "/login" ||
+    pathname.startsWith("/api/auth");
 
   if (!req.auth && !isPublicPath) {
-    const signInUrl = new URL("/api/auth/signin", req.nextUrl.origin);
-    return NextResponse.redirect(signInUrl);
+    const loginUrl = new URL("/login", req.nextUrl.origin);
+    loginUrl.searchParams.set("callbackUrl", pathname + search);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();

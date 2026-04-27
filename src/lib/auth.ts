@@ -11,19 +11,29 @@ const allowedUsers = process.env.ALLOWED_USERS?.split(",").map((u) =>
   u.trim().toLowerCase()
 );
 
+export function getEnabledProviders() {
+  return {
+    github: Boolean(process.env.AUTH_GITHUB_ID),
+    google: Boolean(process.env.AUTH_GOOGLE_ID),
+    linkedin: Boolean(process.env.AUTH_LINKEDIN_ID),
+    resend: Boolean(process.env.AUTH_RESEND_KEY),
+  };
+}
+
 function buildProviders() {
+  const enabled = getEnabledProviders();
   const providers = [];
 
-  if (process.env.AUTH_GITHUB_ID) {
+  if (enabled.github) {
     providers.push(GitHub);
   }
-  if (process.env.AUTH_GOOGLE_ID) {
+  if (enabled.google) {
     providers.push(Google);
   }
-  if (process.env.AUTH_LINKEDIN_ID) {
+  if (enabled.linkedin) {
     providers.push(LinkedIn);
   }
-  if (process.env.AUTH_RESEND_KEY) {
+  if (enabled.resend) {
     providers.push(
       Resend({
         apiKey: process.env.AUTH_RESEND_KEY,
@@ -42,6 +52,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     verificationTokensTable: verificationTokens,
   } as never),
   providers: buildProviders(),
+  pages: {
+    signIn: "/login",
+    error: "/login",
+    verifyRequest: "/login?verified=1",
+  },
   callbacks: {
     signIn({ user, profile, account }) {
       if (!allowedUsers || allowedUsers.length === 0) return true;

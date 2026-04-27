@@ -18,7 +18,7 @@ export default function MarketingLayout({
             <Briefcase className="size-5 shrink-0 text-primary sm:size-6" />
             <span>Opportunity Tracker</span>
           </Link>
-          <Link href="/api/auth/signin">
+          <Link href="/login">
             <Button size="sm" className="sm:h-8 sm:px-3">
               Sign in
             </Button>
