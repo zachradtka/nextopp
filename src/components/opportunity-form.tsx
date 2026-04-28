@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -39,8 +40,73 @@ import {
   type OpportunityFormState,
   type ValidatableField,
 } from "@/lib/validations/opportunity";
-import { parseJobPosting } from "@/lib/actions/parse-job-posting";
+import { parseJobPosting, type ParseJobPostingErrorCode } from "@/lib/actions/parse-job-posting";
 import type { ParsedJobPosting } from "@/lib/validations/parse-job-posting";
+
+const AI_STATUS_MESSAGES = [
+  "Reading the posting...",
+  "Hunting for the company...",
+  "Spotting the salary...",
+  "Decoding recruiter-speak...",
+  "Untangling the role...",
+  "Asking the AI nicely...",
+];
+
+function validateAiUrl(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return "Enter a valid URL (including https://).";
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return "URL must start with http:// or https://.";
+  }
+  return null;
+}
+
+function countAppliedFields(parsed: ParsedJobPosting): number {
+  let count = 0;
+  for (const [key, value] of Object.entries(parsed)) {
+    if (value == null) continue;
+    if (key === "url") continue;
+    if (typeof value === "string" && value.trim().length === 0) continue;
+    count += 1;
+  }
+  return count;
+}
+
+function TabButton({
+  active,
+  onClick,
+  disabled,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+        active
+          ? "border-primary text-foreground"
+          : "border-transparent text-muted-foreground hover:text-foreground"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 interface OpportunityFormProps {
   opportunity?: Opportunity;
@@ -87,6 +153,19 @@ export function OpportunityForm({
   );
   const [aiInputValue, setAiInputValue] = useState("");
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiErrorCode, setAiErrorCode] = useState<ParseJobPostingErrorCode | null>(null);
+  const [aiSuccess, setAiSuccess] = useState<string | null>(null);
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [aiStatusIndex, setAiStatusIndex] = useState(0);
+
+  useEffect(() => {
+    if (!isParsing) return;
+    setAiStatusIndex(Math.floor(Math.random() * AI_STATUS_MESSAGES.length));
+    const id = window.setInterval(() => {
+      setAiStatusIndex((i) => (i + 1) % AI_STATUS_MESSAGES.length);
+    }, 1800);
+    return () => window.clearInterval(id);
+  }, [isParsing]);
 
   const boundUpdateAction = opportunity
     ? updateOpportunity.bind(null, opportunity.id)
@@ -201,8 +280,50 @@ export function OpportunityForm({
     }));
   }, []);
 
+  const handleAiInputChange = useCallback(
+    (next: string) => {
+      setAiInputValue(next);
+      setAiError(null);
+      setAiErrorCode(null);
+      setAiSuccess(null);
+      if (urlError && aiInputMode === "url") {
+        setUrlError(validateAiUrl(next));
+      }
+    },
+    [aiInputMode, urlError]
+  );
+
+  const handleAiUrlBlur = useCallback(() => {
+    if (aiInputMode === "url") {
+      setUrlError(validateAiUrl(aiInputValue));
+    }
+  }, [aiInputMode, aiInputValue]);
+
+  const switchAiMode = useCallback(
+    (next: "url" | "text") => {
+      if (next === aiInputMode) return;
+      setAiInputMode(next);
+      setAiInputValue("");
+      setAiError(null);
+      setAiErrorCode(null);
+      setAiSuccess(null);
+      setUrlError(null);
+    },
+    [aiInputMode]
+  );
+
   const handleAutoFill = useCallback(() => {
     setAiError(null);
+    setAiErrorCode(null);
+    setAiSuccess(null);
+
+    if (aiInputMode === "url") {
+      const validationError = validateAiUrl(aiInputValue);
+      if (validationError) {
+        setUrlError(validationError);
+        return;
+      }
+    }
 
     startParsing(async () => {
       const result = await parseJobPosting({
@@ -212,17 +333,30 @@ export function OpportunityForm({
 
       if (result.error) {
         setAiError(result.error);
+        setAiErrorCode(result.code);
         return;
       }
 
       if (!result.data) {
         setAiError("Couldn't parse that posting right now. Please try again.");
+        setAiErrorCode("ai_provider_error");
         return;
       }
 
+      const filled = countAppliedFields(result.data);
       applyParsedValues(result.data);
+      setAiSuccess(
+        filled > 0
+          ? `Filled ${filled} field${filled === 1 ? "" : "s"} from the posting — review them below.`
+          : "Auto-fill finished, but no fields could be populated."
+      );
     });
   }, [aiInputMode, aiInputValue, applyParsedValues]);
+
+  const autoFillDisabled =
+    isParsing ||
+    !aiInputValue.trim() ||
+    (aiInputMode === "url" && urlError !== null);
 
   const submitDisabled =
     pending || !values.company.trim() || !values.role.trim();
@@ -239,20 +373,20 @@ export function OpportunityForm({
         (target.id === "ai-url" || target.id === "ai-text");
 
       if (inAiPanel) {
-        if (aiEnabled && !isEditing && !isParsing && aiInputValue.trim()) {
+        if (aiEnabled && !isEditing && !autoFillDisabled) {
           e.preventDefault();
           handleAutoFill();
         }
         return;
       }
 
-      if (submitDisabled) return;
+      if (submitDisabled || isParsing) return;
       e.preventDefault();
       formRef.current?.requestSubmit();
     },
     [
       aiEnabled,
-      aiInputValue,
+      autoFillDisabled,
       handleAutoFill,
       isEditing,
       isParsing,
@@ -274,28 +408,50 @@ export function OpportunityForm({
       )}
 
       {aiEnabled && !isEditing && (
-        <div className="space-y-4 rounded-2xl border border-border/70 bg-muted/40 p-4 sm:p-5">
-          <div className="space-y-1">
-            <h2 className="text-base font-semibold">Paste a posting to auto-fill with AI</h2>
-            <p className="text-sm text-muted-foreground">
-              {urlAutofillEnabled && textAutofillEnabled
-                ? "Drop in a job URL or paste the description text, then review the suggested fields before saving."
-                : urlAutofillEnabled
-                  ? "Drop in a job URL and we&apos;ll scrape the posting to suggest form values."
-                  : "Paste the description text, then review the suggested fields before saving."}
-            </p>
-          </div>
+        <div className="overflow-hidden rounded-md border border-border/70 bg-muted/40">
+          {urlAutofillEnabled && textAutofillEnabled && (
+            <div
+              role="tablist"
+              aria-label="Auto-fill source"
+              className="flex border-b border-border/70 bg-muted/30 px-2"
+            >
+              <TabButton
+                active={aiInputMode === "url"}
+                onClick={() => switchAiMode("url")}
+                disabled={isParsing}
+              >
+                URL
+              </TabButton>
+              <TabButton
+                active={aiInputMode === "text"}
+                onClick={() => switchAiMode("text")}
+                disabled={isParsing}
+              >
+                Text
+              </TabButton>
+            </div>
+          )}
 
+          <div className="space-y-3 p-3 sm:p-4">
           {aiInputMode === "url" && urlAutofillEnabled ? (
             <div className="space-y-2">
               <Label htmlFor="ai-url">Job Posting URL</Label>
               <Input
                 id="ai-url"
+                type="url"
                 value={aiInputValue}
-                onChange={(e) => setAiInputValue(e.target.value)}
+                onChange={(e) => handleAiInputChange(e.target.value)}
+                onBlur={handleAiUrlBlur}
                 placeholder="https://..."
                 disabled={isParsing}
+                aria-invalid={urlError !== null}
+                aria-describedby={urlError ? "ai-url-error" : undefined}
               />
+              {urlError && (
+                <p id="ai-url-error" className="text-sm text-destructive">
+                  {urlError}
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
@@ -304,7 +460,7 @@ export function OpportunityForm({
                 id="ai-text"
                 rows={8}
                 value={aiInputValue}
-                onChange={(e) => setAiInputValue(e.target.value)}
+                onChange={(e) => handleAiInputChange(e.target.value)}
                 placeholder="Paste the job posting text here..."
                 className="resize-y"
                 disabled={isParsing}
@@ -312,38 +468,52 @@ export function OpportunityForm({
             </div>
           )}
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {urlAutofillEnabled && textAutofillEnabled ? (
-              <button
-                type="button"
-                className="w-fit text-sm text-primary underline-offset-4 hover:underline"
-                onClick={() => {
-                  setAiError(null);
-                  setAiInputValue("");
-                  setAiInputMode((prev) => (prev === "url" ? "text" : "url"));
-                }}
-              >
-                {aiInputMode === "url"
-                  ? "Or paste job description text"
-                  : "Or switch back to a job posting URL"}
-              </button>
-            ) : (
-              <div />
-            )}
-            <Button type="button" onClick={handleAutoFill} disabled={isParsing}>
+          <div className="flex items-center justify-between gap-3">
+            <span
+              aria-live="polite"
+              className="text-sm text-muted-foreground"
+            >
+              {isParsing ? AI_STATUS_MESSAGES[aiStatusIndex] : ""}
+            </span>
+            <Button type="button" onClick={handleAutoFill} disabled={autoFillDisabled}>
               {isParsing && <LoaderCircle className="animate-spin" />}
-              {isParsing ? "Auto-filling..." : "Auto-fill"}
+              {isParsing ? "Auto-filling..." : "Auto-fill with AI"}
             </Button>
           </div>
 
-          {aiError && (
-            <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {aiError}
+          {aiSuccess && !aiError && (
+            <p className="rounded-md bg-emerald-100 p-3 text-sm text-emerald-900">
+              {aiSuccess}
             </p>
           )}
+
+          {aiError && (
+            <div className="space-y-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              <p>{aiError}</p>
+              {aiInputMode === "url" &&
+                textAutofillEnabled &&
+                (aiErrorCode === "url_unreachable" ||
+                  aiErrorCode === "url_blocked" ||
+                  aiErrorCode === "timeout") && (
+                  <button
+                    type="button"
+                    onClick={() => switchAiMode("text")}
+                    className="text-sm font-medium underline underline-offset-4 hover:opacity-80"
+                  >
+                    Switch to pasting the description text
+                  </button>
+                )}
+            </div>
+          )}
+          </div>
         </div>
       )}
 
+      <fieldset
+        disabled={isParsing}
+        aria-busy={isParsing}
+        className="m-0 space-y-6 border-0 p-0 disabled:opacity-60"
+      >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="company">Company *</Label>
@@ -587,6 +757,7 @@ export function OpportunityForm({
           Cancel
         </Button>
       </div>
+      </fieldset>
     </form>
   );
 }
