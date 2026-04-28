@@ -371,7 +371,7 @@ export function OpportunityForm({
       const target = e.target as HTMLElement | null;
       const inAiPanel =
         target instanceof HTMLElement &&
-        (target.id === "ai-url" || target.id === "ai-text");
+        target.closest("[data-ai-panel]") !== null;
 
       if (inAiPanel) {
         if (aiEnabled && !isEditing && !autoFillDisabled) {
@@ -409,7 +409,10 @@ export function OpportunityForm({
       )}
 
       {aiEnabled && !isEditing && (
-        <div className="overflow-hidden rounded-md border border-border/70 bg-muted/40">
+        <div
+          data-ai-panel
+          className="overflow-hidden rounded-md border border-border/70 bg-muted/40"
+        >
           {urlAutofillEnabled && textAutofillEnabled && (
             <div
               role="tablist"
