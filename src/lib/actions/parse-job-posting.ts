@@ -2,11 +2,7 @@
 
 import { generateObject } from "ai";
 import * as z from "zod";
-import {
-  getAiLanguageModel,
-  getAiProviderConfig,
-  isAiParsingEnabled,
-} from "@/lib/ai";
+import { getAiModel, isAiParsingEnabled } from "@/lib/ai";
 import { requireUserId } from "@/lib/auth-optional";
 import { getFirecrawlConfig, isFirecrawlEnabled } from "@/lib/firecrawl";
 import {
@@ -153,21 +149,15 @@ function getParseTimeoutMs() {
     : DEFAULT_PARSE_TIMEOUT_MS;
 }
 
-function isParserDebugEnabled() {
-  return process.env.AI_PARSER_DEBUG === "true";
-}
+async function generateParsedTextPosting(input: Extract<ParseJobPostingInput, { sourceType: "text" }>) {
+  const model = getAiModel();
 
-function logParserDebug(message: string, details?: Record<string, unknown>) {
-  if (!isParserDebugEnabled()) {
-    return;
+  if (!model) {
+    throw new Error("AI parsing is not configured.");
   }
 
-  console.log(`[ai-parser] ${message}`, details ?? {});
-}
-
-async function generateParsedTextPosting(input: Extract<ParseJobPostingInput, { sourceType: "text" }>) {
   const result = await generateObject({
-    model: getAiLanguageModel(),
+    model,
     timeout: { totalMs: getParseTimeoutMs() },
     schema: parsedJobPostingSchema,
     schemaName: "parsed_job_posting",
@@ -234,13 +224,6 @@ async function scrapeJobPostingWithFirecrawl(url: string): Promise<ParsedJobPost
     );
   }
 
-  logParserDebug("Firecrawl scrape completed", {
-    warning: payload.data?.warning,
-    statusCode: payload.data?.metadata?.statusCode,
-    title: payload.data?.metadata?.title,
-    sourceURL: payload.data?.metadata?.sourceURL,
-  });
-
   const parsed = parsedJobPostingSchema.safeParse(payload.data?.json ?? {});
 
   if (!parsed.success) {
@@ -297,7 +280,7 @@ export async function parseJobPosting(
   await requireUserId();
 
   const value = input.value.trim();
-  const providerConfig = getAiProviderConfig();
+  const aiModel = getAiModel();
   const firecrawlConfig = getFirecrawlConfig();
   const startedAt = Date.now();
 
@@ -326,40 +309,11 @@ export async function parseJobPosting(
   }
 
   try {
-    logParserDebug("Starting parse", {
-      provider:
-        input.sourceType === "url"
-          ? "firecrawl"
-          : providerConfig?.provider ?? "unknown",
-      model: input.sourceType === "text" ? providerConfig?.model ?? "unknown" : undefined,
-      sourceType: input.sourceType,
-      timeoutMs:
-        input.sourceType === "url"
-          ? firecrawlConfig?.timeoutMs
-          : getParseTimeoutMs(),
-      url: input.sourceType === "url" ? value : undefined,
-      textLength: input.sourceType === "text" ? value.length : undefined,
-    });
-
     const parsed =
       input.sourceType === "url"
         ? await scrapeJobPostingWithFirecrawl(value)
         : await generateParsedTextPosting({ ...input, value });
     const data = normalizeParsedJobPosting(parsed, { ...input, value });
-    const durationMs = Date.now() - startedAt;
-
-    logParserDebug("Parse completed", {
-      provider:
-        input.sourceType === "url"
-          ? "firecrawl"
-          : providerConfig?.provider ?? "unknown",
-      sourceType: input.sourceType,
-      durationMs,
-      extractedFields: Object.keys(data).filter((key) => {
-        const field = data[key as keyof ParsedJobPosting];
-        return field != null && String(field).trim() !== "";
-      }),
-    });
 
     if (!hasMeaningfulParsedData(data)) {
       return {
@@ -375,11 +329,8 @@ export async function parseJobPosting(
     const durationMs = Date.now() - startedAt;
 
     console.error("Failed to parse job posting", {
-      provider:
-        input.sourceType === "url"
-          ? "firecrawl"
-          : providerConfig?.provider ?? "unknown",
-      model: input.sourceType === "text" ? providerConfig?.model ?? "unknown" : undefined,
+      provider: input.sourceType === "url" ? "firecrawl" : "ai-gateway",
+      model: input.sourceType === "text" ? aiModel ?? "unknown" : undefined,
       sourceType: input.sourceType,
       timeoutMs:
         input.sourceType === "url"
