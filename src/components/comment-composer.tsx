@@ -33,6 +33,7 @@ export function CommentComposer({ opportunityId }: { opportunityId: string }) {
         onChange={setBody}
         placeholder="Use Markdown to format your comment"
         disabled={isPending}
+        onSubmit={handleSubmit}
       />
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
       <div className="mt-3 flex items-center justify-end">

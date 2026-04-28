@@ -149,6 +149,7 @@ export type OpportunityFormErrors = {
 export type OpportunityFormState = {
   errors?: OpportunityFormErrors;
   message?: string;
+  id?: string;
 };
 
 function getOptionalFormValue(formData: FormData, key: string) {

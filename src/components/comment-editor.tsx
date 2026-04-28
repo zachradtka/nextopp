@@ -45,6 +45,7 @@ export function CommentEditor({
         onChange={setBody}
         disabled={busy}
         autoFocus
+        onSubmit={handleSave}
       />
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
       <div className="mt-2 flex items-center justify-end gap-2">
