@@ -109,6 +109,7 @@ export function MarkdownEditor({
       onSubmit
     ) {
       e.preventDefault();
+      // Stop bubbling so a parent form's own Cmd+Enter handler doesn't double-submit
       e.stopPropagation();
       onSubmit();
       return;

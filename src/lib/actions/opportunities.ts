@@ -207,7 +207,7 @@ export async function deleteComment(commentId: string) {
 export async function createOpportunity(
   prevState: OpportunityFormState,
   formData: FormData
-): Promise<OpportunityFormState & { id?: string }> {
+): Promise<OpportunityFormState> {
   const userId = await requireUserId();
   const result = parseFormData(formData);
 
