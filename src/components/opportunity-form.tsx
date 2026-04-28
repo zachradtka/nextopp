@@ -746,8 +746,15 @@ export function OpportunityForm({
           }
           placeholder="Describe the role: responsibilities, requirements, perks. Markdown supported."
           minHeight={200}
+          onSubmit={() => {
+            if (submitDisabled || isParsing) return;
+            formRef.current?.requestSubmit();
+          }}
         />
         <input type="hidden" name="jobDescription" value={values.jobDescription} />
+        {getError("jobDescription") && (
+          <p className="text-sm text-destructive">{getError("jobDescription")}</p>
+        )}
       </div>
 
       <div className="flex gap-3">
