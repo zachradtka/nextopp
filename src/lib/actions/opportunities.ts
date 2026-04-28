@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { opportunities, statusHistory, opportunityComments } from "@/lib/db/schema";
-import { eq, asc, desc, and, sql } from "drizzle-orm";
+import { eq, asc, desc, and, sql, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 import type { Status } from "@/lib/constants";
@@ -74,7 +74,7 @@ export async function getStatusCounts(
 }
 
 export async function listOpportunities(
-  statusFilter?: Status | "all",
+  statusFilter?: Status[],
   showArchived = false,
   search?: string
 ) {
@@ -84,8 +84,8 @@ export async function listOpportunities(
     eq(opportunities.archived, showArchived ? 1 : 0),
   ];
 
-  if (statusFilter && statusFilter !== "all") {
-    conditions.push(eq(opportunities.status, statusFilter));
+  if (statusFilter && statusFilter.length > 0) {
+    conditions.push(inArray(opportunities.status, statusFilter));
   }
 
   if (search) {

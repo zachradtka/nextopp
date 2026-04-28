@@ -3,15 +3,24 @@ import { Button } from "@/components/ui/button";
 import { OpportunityTable } from "@/components/opportunity-table";
 import { StatusFilter } from "@/components/status-filter";
 import { listOpportunities, getStatusCounts } from "@/lib/actions/opportunities";
-import type { Status } from "@/lib/constants";
+import { STATUSES, type Status } from "@/lib/constants";
 
 interface PageProps {
   searchParams: Promise<{ status?: string; archived?: string; search?: string }>;
 }
 
+function parseStatusParam(raw: string | undefined): Status[] {
+  if (!raw) return [];
+  const valid = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s): s is Status => (STATUSES as readonly string[]).includes(s));
+  return Array.from(new Set(valid));
+}
+
 export default async function OpportunitiesPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const statusFilter = (params.status as Status | "all") ?? "all";
+  const statusFilter = parseStatusParam(params.status);
   const showArchived = params.archived === "true";
   const search = params.search || undefined;
   const [opportunities, statusCounts] = await Promise.all([
@@ -38,7 +47,7 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
       </div>
 
       {/* Filters */}
-      <StatusFilter current={statusFilter} counts={statusCounts} searchParams={params} />
+      <StatusFilter selected={statusFilter} counts={statusCounts} searchParams={params} />
 
       {/* Table */}
       <OpportunityTable opportunities={opportunities} />
