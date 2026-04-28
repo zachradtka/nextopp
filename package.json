@@ -13,9 +13,6 @@
     "import": "tsx scripts/import-csv.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.67",
-    "@ai-sdk/google": "^3.0.59",
-    "@ai-sdk/openai": "^3.0.51",
     "@auth/drizzle-adapter": "^1.11.2",
     "@base-ui/react": "^1.3.0",
     "@libsql/client": "^0.17.2",

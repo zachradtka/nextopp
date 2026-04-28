@@ -56,18 +56,14 @@ Feature backlog is tracked in GitHub Issues: https://github.com/zachradtka/oppor
 ## AI Parsing
 
 - URL parsing uses Firecrawl when `FIRECRAWL_API_KEY` is configured
-- Pasted-text parsing uses the configured AI provider when `AI_PROVIDER` is set to a supported provider and the matching API key is present
-- Supported providers today: `openai`, `anthropic`, `google`
-- Optional: set `AI_MODEL` to override the default model for the selected provider
+- Pasted-text parsing routes through [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) when `AI_GATEWAY_API_KEY` and `AI_MODEL` are set
+- Get the gateway API key from the Vercel dashboard. The gateway provides centralized observability (request logs, latency, token usage) for every model call
+- Gateway usage is billed through your Vercel account by default; configure BYOK in the Gateway dashboard to bill against your own provider keys instead
+- `AI_MODEL` uses the `provider/model` format, e.g. `anthropic/claude-sonnet-4.6`, `openai/gpt-4.1-mini`, `google/gemini-2.5-flash` — switch models by editing this single string
 - Optional: set `AI_PARSE_TIMEOUT_MS` to control how long a parse call can run before it fails
-- Optional: set `AI_PARSER_DEBUG=true` for verbose server logs while debugging parser behavior locally
 - Optional Firecrawl settings:
   - `FIRECRAWL_API_URL` defaults to `https://api.firecrawl.dev/v2`
   - `FIRECRAWL_TIMEOUT_MS` controls the Firecrawl scrape timeout
   - `FIRECRAWL_MAX_AGE_MS` controls Firecrawl caching
   - `FIRECRAWL_PROXY` can be `basic`, `enhanced`, or `auto`
-- Required keys by provider:
-  - `OPENAI_API_KEY` when `AI_PROVIDER=openai`
-  - `ANTHROPIC_API_KEY` when `AI_PROVIDER=anthropic`
-  - `GOOGLE_GENERATIVE_AI_API_KEY` when `AI_PROVIDER=google`
-- When neither Firecrawl nor an AI provider is configured, the opportunity form renders exactly like the non-AI version
+- When neither Firecrawl nor the AI Gateway is configured, the opportunity form renders exactly like the non-AI version
