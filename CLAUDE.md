@@ -58,6 +58,7 @@ Feature backlog is tracked in GitHub Issues: https://github.com/zachradtka/oppor
 - URL parsing uses Firecrawl when `FIRECRAWL_API_KEY` is configured
 - Pasted-text parsing routes through [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) when `AI_GATEWAY_API_KEY` and `AI_MODEL` are set
 - Get the gateway API key from the Vercel dashboard. The gateway provides centralized observability (request logs, latency, token usage) for every model call
+- Gateway usage is billed through your Vercel account by default; configure BYOK in the Gateway dashboard to bill against your own provider keys instead
 - `AI_MODEL` uses the `provider/model` format, e.g. `anthropic/claude-sonnet-4.6`, `openai/gpt-4.1-mini`, `google/gemini-2.5-flash` — switch models by editing this single string
 - Optional: set `AI_PARSE_TIMEOUT_MS` to control how long a parse call can run before it fails
 - Optional Firecrawl settings:

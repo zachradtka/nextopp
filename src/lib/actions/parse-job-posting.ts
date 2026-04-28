@@ -2,7 +2,7 @@
 
 import { generateObject } from "ai";
 import * as z from "zod";
-import { getAiModel, isAiParsingEnabled } from "@/lib/ai";
+import { getAiModelId, isAiParsingEnabled } from "@/lib/ai";
 import { requireUserId } from "@/lib/auth-optional";
 import { getFirecrawlConfig, isFirecrawlEnabled } from "@/lib/firecrawl";
 import {
@@ -150,7 +150,7 @@ function getParseTimeoutMs() {
 }
 
 async function generateParsedTextPosting(input: Extract<ParseJobPostingInput, { sourceType: "text" }>) {
-  const model = getAiModel();
+  const model = getAiModelId();
 
   if (!model) {
     throw new Error("AI parsing is not configured.");
@@ -280,7 +280,7 @@ export async function parseJobPosting(
   await requireUserId();
 
   const value = input.value.trim();
-  const aiModel = getAiModel();
+  const aiModelId = getAiModelId();
   const firecrawlConfig = getFirecrawlConfig();
   const startedAt = Date.now();
 
@@ -330,7 +330,7 @@ export async function parseJobPosting(
 
     console.error("Failed to parse job posting", {
       provider: input.sourceType === "url" ? "firecrawl" : "ai-gateway",
-      model: input.sourceType === "text" ? aiModel ?? "unknown" : undefined,
+      model: input.sourceType === "text" ? aiModelId ?? "unknown" : undefined,
       sourceType: input.sourceType,
       timeoutMs:
         input.sourceType === "url"

@@ -1,4 +1,4 @@
-export function getAiModel() {
+export function getAiModelId() {
   const model = process.env.AI_MODEL?.trim();
   const apiKey = process.env.AI_GATEWAY_API_KEY?.trim();
 
@@ -10,5 +10,5 @@ export function getAiModel() {
 }
 
 export function isAiParsingEnabled() {
-  return getAiModel() !== null;
+  return getAiModelId() !== null;
 }
