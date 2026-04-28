@@ -15,9 +15,29 @@ type ParseJobPostingInput =
   | { sourceType: "url"; value: string }
   | { sourceType: "text"; value: string };
 
+export type ParseJobPostingErrorCode =
+  | "invalid_input"
+  | "url_unreachable"
+  | "url_blocked"
+  | "couldnt_extract"
+  | "ai_provider_error"
+  | "timeout"
+  | "not_configured";
+
 export type ParseJobPostingResult =
-  | { data: ParsedJobPosting; error?: undefined }
-  | { data?: undefined; error: string };
+  | { data: ParsedJobPosting; error?: undefined; code?: undefined }
+  | { data?: undefined; error: string; code: ParseJobPostingErrorCode };
+
+class FirecrawlScrapeError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+    public readonly upstreamStatusCode?: number
+  ) {
+    super(message);
+    this.name = "FirecrawlScrapeError";
+  }
+}
 
 const DEFAULT_PARSE_TIMEOUT_MS = 30_000;
 const FIRECRAWL_EXCTRACTION_PROMPT = `
@@ -217,10 +237,12 @@ async function scrapeJobPostingWithFirecrawl(url: string): Promise<ParsedJobPost
   const payload = (await response.json()) as FirecrawlScrapeResponse;
 
   if (!response.ok || !payload.success) {
-    throw new Error(
+    throw new FirecrawlScrapeError(
       `Firecrawl scrape failed (${response.status}): ${
         payload.data?.metadata?.error || "Unknown error"
-      }`
+      }`,
+      response.status,
+      payload.data?.metadata?.statusCode
     );
   }
 
@@ -286,6 +308,7 @@ export async function parseJobPosting(
 
   if (!value) {
     return {
+      code: "invalid_input",
       error:
         input.sourceType === "url"
           ? "Paste a job posting URL to auto-fill the form."
@@ -296,16 +319,16 @@ export async function parseJobPosting(
   if (input.sourceType === "url") {
     const urlValidation = validateJobPostingUrl(value);
     if (!urlValidation.valid) {
-      return { error: urlValidation.error };
+      return { code: "invalid_input", error: urlValidation.error };
     }
   }
 
   if (input.sourceType === "url" && !isFirecrawlEnabled()) {
-    return { error: "URL parsing is not configured." };
+    return { code: "not_configured", error: "URL parsing is not configured." };
   }
 
   if (input.sourceType === "text" && !isAiParsingEnabled()) {
-    return { error: "Text parsing is not configured." };
+    return { code: "not_configured", error: "Text parsing is not configured." };
   }
 
   try {
@@ -317,10 +340,11 @@ export async function parseJobPosting(
 
     if (!hasMeaningfulParsedData(data)) {
       return {
+        code: "couldnt_extract",
         error:
           input.sourceType === "url"
-            ? "Couldn't parse that posting. Try pasting the job description text instead."
-            : "Couldn't parse that posting text. Please review it and fill the form manually.",
+            ? "Couldn't find job posting details on that page."
+            : "Couldn't find job posting details in that text.",
       };
     }
 
@@ -340,23 +364,77 @@ export async function parseJobPosting(
       errorMessage: error instanceof Error ? error.message : String(error),
     });
 
-    const errorMessage =
-      error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+    return classifyParseError(error, input);
+  }
+}
 
-    if (errorMessage.includes("timed out") || errorMessage.includes("abort")) {
+function classifyParseError(
+  error: unknown,
+  input: ParseJobPostingInput
+): { error: string; code: ParseJobPostingErrorCode } {
+  const errorMessage =
+    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+
+  const isTimeout =
+    errorMessage.includes("timed out") ||
+    errorMessage.includes("timeout") ||
+    errorMessage.includes("abort");
+
+  if (isTimeout) {
+    return {
+      code: "timeout",
+      error:
+        input.sourceType === "url"
+          ? "Fetching that URL took too long."
+          : "AI parsing took too long.",
+    };
+  }
+
+  if (input.sourceType === "url" && error instanceof FirecrawlScrapeError) {
+    const upstream = error.upstreamStatusCode;
+
+    if (
+      upstream === 401 ||
+      upstream === 403 ||
+      upstream === 407 ||
+      upstream === 429 ||
+      upstream === 451
+    ) {
       return {
-        error:
-          input.sourceType === "url"
-            ? "URL parsing took too long. Try again or paste the job description text instead."
-            : "AI parsing took too long. Try pasting the job description text instead.",
+        code: "url_blocked",
+        error: "That site is blocking automated fetches.",
+      };
+    }
+
+    if (upstream === 404 || upstream === 410) {
+      return {
+        code: "url_unreachable",
+        error: "That URL returned not-found.",
+      };
+    }
+
+    if (typeof upstream === "number" && upstream >= 500) {
+      return {
+        code: "url_unreachable",
+        error: "The job site returned a server error.",
       };
     }
 
     return {
-      error:
-        input.sourceType === "url"
-          ? "Couldn't parse that posting. Try pasting the job description text instead."
-          : "Couldn't parse that posting text right now. Please try again or fill the form manually.",
+      code: "url_unreachable",
+      error: "Couldn't reach that URL.",
     };
   }
+
+  if (input.sourceType === "url") {
+    return {
+      code: "url_unreachable",
+      error: "Couldn't reach that URL.",
+    };
+  }
+
+  return {
+    code: "ai_provider_error",
+    error: "AI parsing failed. Please try again.",
+  };
 }
