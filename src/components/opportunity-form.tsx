@@ -130,10 +130,10 @@ export function OpportunityForm({
   }, [createState, isEditing, router]);
 
   useEffect(() => {
-    if (isEditing && updateState && !updateState.errors && !updatePending && Object.keys(updateState).length > 0 && !updateState.message) {
+    if (isEditing && "id" in updateState && updateState.id && !updateState.errors) {
       router.push(`/opportunities/${opportunity!.id}`);
     }
-  }, [updateState, isEditing, updatePending, opportunity, router]);
+  }, [updateState, isEditing, opportunity, router]);
 
   const handleChange = useCallback(
     (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -224,8 +224,49 @@ export function OpportunityForm({
     });
   }, [aiInputMode, aiInputValue, applyParsedValues]);
 
+  const submitDisabled =
+    pending || !values.company.trim() || !values.role.trim();
+
+  const handleFormKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLFormElement>) => {
+      if (e.key !== "Enter" || e.shiftKey || !(e.metaKey || e.ctrlKey)) {
+        return;
+      }
+
+      const target = e.target as HTMLElement | null;
+      const inAiPanel =
+        target instanceof HTMLElement &&
+        (target.id === "ai-url" || target.id === "ai-text");
+
+      if (inAiPanel) {
+        if (aiEnabled && !isEditing && !isParsing && aiInputValue.trim()) {
+          e.preventDefault();
+          handleAutoFill();
+        }
+        return;
+      }
+
+      if (submitDisabled) return;
+      e.preventDefault();
+      formRef.current?.requestSubmit();
+    },
+    [
+      aiEnabled,
+      aiInputValue,
+      handleAutoFill,
+      isEditing,
+      isParsing,
+      submitDisabled,
+    ]
+  );
+
   return (
-    <form ref={formRef} action={formAction} className="space-y-6 max-w-2xl">
+    <form
+      ref={formRef}
+      action={formAction}
+      onKeyDown={handleFormKeyDown}
+      className="space-y-6 max-w-2xl"
+    >
       {state.message && state.errors && (
         <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {state.message}
@@ -539,7 +580,7 @@ export function OpportunityForm({
       </div>
 
       <div className="flex gap-3">
-        <Button type="submit" disabled={pending || !values.company.trim() || !values.role.trim()}>
+        <Button type="submit" disabled={submitDisabled}>
           {pending ? (isEditing ? "Saving..." : "Creating...") : (isEditing ? "Save" : "Create")}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>

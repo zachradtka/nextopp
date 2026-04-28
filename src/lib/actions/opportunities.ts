@@ -313,7 +313,7 @@ export async function updateOpportunity(
 
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${id}`);
-  return {};
+  return { id };
 }
 
 export async function updateOpportunityStatus(id: string, status: Status) {

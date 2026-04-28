@@ -66,6 +66,7 @@ interface MarkdownEditorProps {
   disabled?: boolean;
   minHeight?: number;
   autoFocus?: boolean;
+  onSubmit?: () => void;
 }
 
 export function MarkdownEditor({
@@ -75,6 +76,7 @@ export function MarkdownEditor({
   disabled,
   minHeight = 140,
   autoFocus,
+  onSubmit,
 }: MarkdownEditorProps) {
   const [tab, setTab] = useState<Tab>("write");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -100,6 +102,18 @@ export function MarkdownEditor({
   }, [tab, autoFocus]);
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (
+      e.key === "Enter" &&
+      !e.shiftKey &&
+      (e.metaKey || e.ctrlKey) &&
+      onSubmit
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      onSubmit();
+      return;
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       const target = e.currentTarget;
       const { selectionStart, value: current } = target;
