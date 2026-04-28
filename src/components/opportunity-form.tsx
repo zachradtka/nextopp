@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MarkdownEditor } from "@/components/markdown-editor";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -512,7 +513,7 @@ export function OpportunityForm({
       <fieldset
         disabled={isParsing}
         aria-busy={isParsing}
-        className="m-0 space-y-6 border-0 p-0 disabled:opacity-60"
+        className="m-0 min-w-0 space-y-6 border-0 p-0 disabled:opacity-60"
       >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -738,15 +739,22 @@ export function OpportunityForm({
 
       <div className="space-y-2">
         <Label htmlFor="jobDescription">Job Description</Label>
-        <Textarea
-          id="jobDescription"
-          name="jobDescription"
-          rows={8}
+        <MarkdownEditor
           value={values.jobDescription}
-          onChange={handleChange("jobDescription")}
-          placeholder="Paste the full job posting here (description, responsibilities, requirements)..."
-          className="resize-y"
+          onChange={(value) =>
+            setValues((prev) => ({ ...prev, jobDescription: value }))
+          }
+          placeholder="Describe the role: responsibilities, requirements, perks. Markdown supported."
+          minHeight={200}
+          onSubmit={() => {
+            if (submitDisabled || isParsing) return;
+            formRef.current?.requestSubmit();
+          }}
         />
+        <input type="hidden" name="jobDescription" value={values.jobDescription} />
+        {getError("jobDescription") && (
+          <p className="text-sm text-destructive">{getError("jobDescription")}</p>
+        )}
       </div>
 
       <div className="flex gap-3">
