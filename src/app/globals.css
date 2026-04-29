@@ -106,6 +106,14 @@
   --status-error-fg: #B91C1C;
   --status-violet-bg: #EDE9FE;
   --status-violet-fg: #6D28D9;
+  /* Status dots */
+  --status-dot-saved: #9CA3AF;
+  --status-dot-applied: #3B82F6;
+  --status-dot-interviewing: #F59E0B;
+  --status-dot-offered: #8B5CF6;
+  --status-dot-rejected: #EF4444;
+  --status-dot-withdrawn: #64748B;
+  --status-dot-accepted: #10B981;
 }
 
 .dark {
@@ -162,6 +170,14 @@
   --status-error-fg: #fca5a5;
   --status-violet-bg: #4c1d9533;
   --status-violet-fg: #c4b5fd;
+  /* Status dots — brightened for visibility on dark surfaces */
+  --status-dot-saved: #c2c6d6;
+  --status-dot-applied: #60a5fa;
+  --status-dot-interviewing: #fbbf24;
+  --status-dot-offered: #a78bfa;
+  --status-dot-rejected: #f87171;
+  --status-dot-withdrawn: #94a3b8;
+  --status-dot-accepted: #34d399;
 }
 
 @layer base {

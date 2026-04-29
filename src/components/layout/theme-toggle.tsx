@@ -32,15 +32,15 @@ export function ThemeToggle({ collapsed }: ThemeToggleProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="min-w-[8rem]">
         <DropdownMenuItem onClick={() => setTheme("light")}>
-          <Sun className="size-4" />
+          <Sun />
           Light
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
-          <Moon className="size-4" />
+          <Moon />
           Dark
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
-          <Monitor className="size-4" />
+          <Monitor />
           System
         </DropdownMenuItem>
       </DropdownMenuContent>

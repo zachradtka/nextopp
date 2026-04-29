@@ -31,13 +31,13 @@ export const STATUS_COLORS: Record<Status, string> = {
 };
 
 export const STATUS_DOT_COLORS: Record<Status, string> = {
-  saved: "bg-[#9CA3AF]",
-  applied: "bg-[#3B82F6]",
-  interviewing: "bg-[#F59E0B]",
-  offered: "bg-[#8B5CF6]",
-  rejected: "bg-[#EF4444]",
-  withdrawn: "bg-[#64748B]",
-  accepted: "bg-[#10B981]",
+  saved: "bg-[var(--status-dot-saved)]",
+  applied: "bg-[var(--status-dot-applied)]",
+  interviewing: "bg-[var(--status-dot-interviewing)]",
+  offered: "bg-[var(--status-dot-offered)]",
+  rejected: "bg-[var(--status-dot-rejected)]",
+  withdrawn: "bg-[var(--status-dot-withdrawn)]",
+  accepted: "bg-[var(--status-dot-accepted)]",
 };
 
 export const WORK_MODES = ["remote", "hybrid", "onsite"] as const;
