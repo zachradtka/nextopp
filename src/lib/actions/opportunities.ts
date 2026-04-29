@@ -151,6 +151,12 @@ export async function addComment(opportunityId: string, body: string) {
     updatedAt: now,
   });
 
+  await db
+    .update(opportunities)
+    .set({ updatedAt: now })
+    .where(and(eq(opportunities.id, opportunityId), eq(opportunities.userId, userId)));
+
+  revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${opportunityId}`);
 }
 
@@ -185,11 +191,18 @@ export async function updateComment(commentId: string, body: string) {
     throw new Error("Comment cannot be empty");
   }
 
+  const now = new Date().toISOString();
   await db
     .update(opportunityComments)
-    .set({ body: trimmed, updatedAt: new Date().toISOString() })
+    .set({ body: trimmed, updatedAt: now })
     .where(eq(opportunityComments.id, commentId));
 
+  await db
+    .update(opportunities)
+    .set({ updatedAt: now })
+    .where(and(eq(opportunities.id, opportunityId), eq(opportunities.userId, userId)));
+
+  revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${opportunityId}`);
 }
 
@@ -201,6 +214,12 @@ export async function deleteComment(commentId: string) {
     .delete(opportunityComments)
     .where(eq(opportunityComments.id, commentId));
 
+  await db
+    .update(opportunities)
+    .set({ updatedAt: new Date().toISOString() })
+    .where(and(eq(opportunities.id, opportunityId), eq(opportunities.userId, userId)));
+
+  revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${opportunityId}`);
 }
 
