@@ -486,7 +486,7 @@ export function OpportunityForm({
           </div>
 
           {aiSuccess && !aiError && (
-            <p className="rounded-md bg-emerald-100 p-3 text-sm text-emerald-900">
+            <p className="rounded-md bg-[var(--status-success-bg)] p-3 text-sm text-[var(--status-success-fg)]">
               {aiSuccess}
             </p>
           )}

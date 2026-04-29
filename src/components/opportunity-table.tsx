@@ -117,7 +117,7 @@ export function OpportunityTable({ opportunities }: OpportunityTableProps) {
       </div>
 
       {/* Desktop: Table */}
-      <div className="hidden md:block bg-card border rounded-lg">
+      <div className="hidden md:block bg-card border rounded-lg overflow-hidden">
         <Table>
           <TableHeader className="bg-background">
             <TableRow className="hover:bg-transparent border-b border-border">
