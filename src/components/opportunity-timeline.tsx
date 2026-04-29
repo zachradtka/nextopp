@@ -96,7 +96,7 @@ function StatusEvent({
   note: string | null;
 }) {
   const label = STATUS_LABELS[status as Status] ?? status;
-  const dotColor = STATUS_DOT_COLORS[status as Status] ?? "bg-gray-400";
+  const dotColor = STATUS_DOT_COLORS[status as Status] ?? "bg-muted-foreground";
 
   return (
     <li className="relative pl-8">

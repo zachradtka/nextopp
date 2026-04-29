@@ -21,13 +21,13 @@ export const STATUS_LABELS: Record<Status, string> = {
 };
 
 export const STATUS_COLORS: Record<Status, string> = {
-  saved: "bg-[#F3F4F6] text-[#6B7280]",
-  applied: "bg-[#F3F4F6] text-[#6B7280]",
-  interviewing: "bg-[#FEF3C7] text-[#F59E0B]",
-  offered: "bg-[#D1FAE5] text-[#10B981]",
-  rejected: "bg-[#FEE2E2] text-[#EF4444]",
-  withdrawn: "bg-[#FEF3C7] text-[#D97706]",
-  accepted: "bg-[#D1FAE5] text-[#059669]",
+  saved: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]",
+  applied: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]",
+  interviewing: "bg-[var(--status-warning-bg)] text-[var(--status-warning-fg)]",
+  offered: "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]",
+  rejected: "bg-[var(--status-error-bg)] text-[var(--status-error-fg)]",
+  withdrawn: "bg-[var(--status-warning-bg)] text-[var(--status-warning-fg)]",
+  accepted: "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]",
 };
 
 export const STATUS_DOT_COLORS: Record<Status, string> = {

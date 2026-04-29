@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -155,6 +156,8 @@ export function Sidebar({
             </button>
           </form>
         )}
+
+        <ThemeToggle collapsed={collapsed} />
 
         {/* Collapse toggle (desktop only) */}
         <button
