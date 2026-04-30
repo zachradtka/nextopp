@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Opportunity Tracker",
+  title: "NextOpp",
   description: "Track your job search opportunities",
 };
 

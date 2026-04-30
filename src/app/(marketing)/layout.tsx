@@ -16,7 +16,7 @@ export default function MarketingLayout({
             className="flex items-center gap-2 text-sm font-semibold sm:text-base"
           >
             <Briefcase className="size-5 shrink-0 text-primary sm:size-6" />
-            <span>Opportunity Tracker</span>
+            <span>NextOpp</span>
           </Link>
           <SignInButton />
         </div>
@@ -26,7 +26,7 @@ export default function MarketingLayout({
 
       <footer className="border-t border-border">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:px-6 lg:px-8">
-          <span>Opportunity Tracker — open source</span>
+          <span>NextOpp — open source</span>
           <a
             href="https://github.com/zachradtka/opportunity-tracker"
             target="_blank"

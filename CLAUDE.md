@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# Opportunity Tracker
+# NextOpp
 
 Job opportunity tracking web app. Open source, single-user (multi-user planned — see issue #1).
 

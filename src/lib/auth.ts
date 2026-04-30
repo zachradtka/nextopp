@@ -37,7 +37,7 @@ function buildProviders() {
     providers.push(
       Resend({
         apiKey: process.env.AUTH_RESEND_KEY,
-        from: process.env.AUTH_EMAIL_FROM ?? "Opportunity Tracker <noreply@resend.dev>",
+        from: process.env.AUTH_EMAIL_FROM ?? "NextOpp <noreply@resend.dev>",
       })
     );
   }
