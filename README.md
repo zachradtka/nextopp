@@ -1,4 +1,4 @@
-# Opportunity Tracker
+# NextOpp
 
 A simple web app to track job opportunities during your search. Keep tabs on where you've applied, interview status, salary ranges, notes, and more — all in one place.
 
@@ -110,7 +110,7 @@ Passwordless sign-in via email using [Resend](https://resend.com).
 
 ```bash
 AUTH_RESEND_KEY=your-api-key
-AUTH_EMAIL_FROM="Opportunity Tracker <noreply@yourdomain.com>"  # optional, defaults to noreply@resend.dev
+AUTH_EMAIL_FROM="NextOpp <noreply@yourdomain.com>"  # optional, defaults to noreply@resend.dev
 ```
 
 ### Restricting Access

@@ -103,7 +103,7 @@ export function Sidebar({
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-semibold leading-tight">
-                Opportunity Tracker
+                NextOpp
               </span>
             </div>
           )}

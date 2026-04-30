@@ -6,7 +6,7 @@ import { getOptionalSession, isAuthEnabled } from "@/lib/auth-optional";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "Opportunity Tracker — track your interviewing journey",
+  title: "NextOpp — track your interviewing journey",
   description:
     "A central place to track job applications, manage your interview pipeline, and log every update along the way.",
 };

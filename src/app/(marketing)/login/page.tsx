@@ -13,8 +13,8 @@ import { GitHubIcon, GoogleIcon, LinkedInIcon } from "./provider-icons";
 import { EmailSubmitButton } from "./email-submit-button";
 
 export const metadata: Metadata = {
-  title: "Sign in — Opportunity Tracker",
-  description: "Sign in to your Opportunity Tracker account",
+  title: "Sign in — NextOpp",
+  description: "Sign in to your NextOpp account",
 };
 
 const errorMessages: Record<string, string> = {
@@ -107,7 +107,7 @@ function SignInForms({
     <>
       <div className="mb-6 text-center">
         <h1 className="text-xl font-semibold sm:text-2xl">
-          Sign in to Opportunity Tracker
+          Sign in to NextOpp
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Continue to your interview pipeline
