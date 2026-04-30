@@ -49,6 +49,17 @@ When pushing schema changes to the production database:
 TURSO_DATABASE_URL=<url> TURSO_AUTH_TOKEN=<token> npm run db:push
 ```
 
+## Preview environment
+
+Vercel preview deploys run against a separate Turso database with `AUTH_DISABLED=true`. Production and preview env vars are scoped per-environment in Vercel **Settings → Environment Variables** (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `AUTH_DISABLED`, and the OAuth/`AUTH_SECRET` vars).
+
+When `AUTH_DISABLED=true`, the app runs as a single hardcoded user with id `local-dev-user` (see [src/lib/auth-optional.ts](src/lib/auth-optional.ts)). When seeding the preview db, pass `local-dev-user` as the import script's user-id arg — using a different id leaves opportunities orphaned and the UI shows empty.
+
+```bash
+TURSO_DATABASE_URL=<preview-url> TURSO_AUTH_TOKEN=<preview-token> \
+  npm run import -- scripts/sample-data.csv local-dev-user
+```
+
 ## GitHub Issues
 
 Feature backlog is tracked in GitHub Issues: https://github.com/zachradtka/opportunity-tracker/issues
