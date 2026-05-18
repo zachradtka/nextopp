@@ -1,7 +1,12 @@
 "use client";
 
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Calendar } from "lucide-react";
+import { Archive, Calendar, X } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -11,11 +16,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status-badge";
+import { bulkArchive } from "@/lib/actions/opportunities";
 import type { Opportunity } from "@/lib/db/schema";
 import type { Status } from "@/lib/constants";
 
 interface OpportunityTableProps {
   opportunities: Opportunity[];
+  view: "active" | "archive";
 }
 
 function formatDate(dateStr: string | null): string {
@@ -93,7 +100,119 @@ function MobileCard({ opp }: { opp: Opportunity }) {
   );
 }
 
-export function OpportunityTable({ opportunities }: OpportunityTableProps) {
+function formatArchiveCounts(updated: number, unchanged: number): string {
+  const parts: string[] = [];
+  if (updated > 0) {
+    parts.push(
+      `Archived ${updated} ${updated === 1 ? "opportunity" : "opportunities"}`,
+    );
+  }
+  if (unchanged > 0) {
+    parts.push(`${unchanged} already archived`);
+  }
+  return parts.join(", ");
+}
+
+export function OpportunityTable({
+  opportunities,
+  view,
+}: OpportunityTableProps) {
+  const [selection, setSelection] = useState<Set<string>>(new Set());
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const shiftPressedRef = useRef(false);
+  const searchParams = useSearchParams();
+  const bulkEnabled = view === "active";
+
+  // Clear selection whenever the URL search params change (filter chip click,
+  // search keystroke, archive-view toggle).
+  useEffect(() => {
+    setSelection(new Set());
+    setLastClickedIndex(null);
+  }, [searchParams]);
+
+  // Esc clears selection. Skip when focus is in an input/textarea or inside a
+  // dialog — those owners handle Esc themselves.
+  useEffect(() => {
+    if (selection.size === 0) return;
+    function handler(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) {
+          return;
+        }
+        if (target.closest("[role='dialog']")) return;
+      }
+      setSelection(new Set());
+      setLastClickedIndex(null);
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [selection.size]);
+
+  const allSelected =
+    opportunities.length > 0 && selection.size === opportunities.length;
+  const someSelected = selection.size > 0 && !allSelected;
+
+  function toggleAll() {
+    if (selection.size > 0) {
+      setSelection(new Set());
+      setLastClickedIndex(null);
+    } else {
+      setSelection(new Set(opportunities.map((o) => o.id)));
+    }
+  }
+
+  function toggleRow(index: number, useShift: boolean) {
+    const opp = opportunities[index];
+    setSelection((prev) => {
+      const next = new Set(prev);
+      if (useShift && lastClickedIndex !== null && lastClickedIndex !== index) {
+        const start = Math.min(lastClickedIndex, index);
+        const end = Math.max(lastClickedIndex, index);
+        // Apply the same target state across the range, derived from the
+        // clicked row's resulting state.
+        const targetChecked = !prev.has(opp.id);
+        for (let i = start; i <= end; i++) {
+          const id = opportunities[i].id;
+          if (targetChecked) next.add(id);
+          else next.delete(id);
+        }
+      } else {
+        if (next.has(opp.id)) next.delete(opp.id);
+        else next.add(opp.id);
+      }
+      return next;
+    });
+    setLastClickedIndex(index);
+  }
+
+  function clearSelection() {
+    setSelection(new Set());
+    setLastClickedIndex(null);
+  }
+
+  function handleBulkArchive() {
+    const ids = Array.from(selection);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      const result = await bulkArchive(ids);
+      clearSelection();
+
+      const summary = formatArchiveCounts(result.updated, result.unchanged);
+      if (result.failed > 0) {
+        const failedPart = `${result.failed} failed`;
+        toast.error(summary ? `${summary}, ${failedPart}` : failedPart);
+      } else if (result.updated > 0) {
+        toast.success(summary);
+      } else if (result.unchanged > 0) {
+        toast(summary);
+      }
+    });
+  }
+
   if (opportunities.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -107,6 +226,9 @@ export function OpportunityTable({ opportunities }: OpportunityTableProps) {
     );
   }
 
+  const bulkBarOpen = bulkEnabled && selection.size > 0;
+  const desktopColCount = bulkEnabled ? 5 : 4;
+
   return (
     <>
       {/* Mobile: Card list */}
@@ -117,46 +239,128 @@ export function OpportunityTable({ opportunities }: OpportunityTableProps) {
       </div>
 
       {/* Desktop: Table */}
-      <div className="hidden md:block bg-card border rounded-lg overflow-hidden">
+      <div className="hidden md:block bg-card border rounded-lg overflow-clip">
         <Table>
-          <TableHeader className="bg-background">
-            <TableRow className="hover:bg-transparent border-b border-border">
-              <TableHead>Company & Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Applied Date</TableHead>
-              <TableHead>Last Contact</TableHead>
-            </TableRow>
+          <TableHeader className="bg-background sticky top-0 z-10">
+            {bulkBarOpen ? (
+              <TableRow className="hover:bg-transparent border-b border-border">
+                <TableHead
+                  colSpan={desktopColCount}
+                  className="h-10 whitespace-nowrap pl-4 pr-2"
+                >
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={allSelected || someSelected}
+                      indeterminate={someSelected}
+                      onCheckedChange={() => toggleAll()}
+                      aria-label={
+                        allSelected ? "Deselect all" : "Select all visible"
+                      }
+                    />
+                    <span className="text-sm font-semibold text-foreground">
+                      {selection.size} selected
+                    </span>
+                    <div className="ml-auto flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBulkArchive}
+                        disabled={isPending}
+                      >
+                        {isPending ? (
+                          <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        ) : (
+                          <Archive />
+                        )}
+                        Archive
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearSelection}
+                        disabled={isPending}
+                      >
+                        <X />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </TableHead>
+              </TableRow>
+            ) : (
+              <TableRow className="hover:bg-transparent border-b border-border">
+                {bulkEnabled && (
+                  <TableHead className="w-10 pl-4">
+                    <Checkbox
+                      checked={allSelected}
+                      indeterminate={false}
+                      onCheckedChange={() => toggleAll()}
+                      aria-label="Select all visible"
+                    />
+                  </TableHead>
+                )}
+                <TableHead className="w-full">Company &amp; Role</TableHead>
+                <TableHead className="min-w-[200px]">Status</TableHead>
+                <TableHead className="min-w-[180px]">Applied Date</TableHead>
+                <TableHead className="min-w-[180px]">Last Contact</TableHead>
+              </TableRow>
+            )}
           </TableHeader>
           <TableBody>
-            {opportunities.map((opp) => (
-              <TableRow key={opp.id}>
-                <TableCell className="py-4">
-                  <Link
-                    href={`/opportunities/${opp.id}`}
-                    className="hover:underline"
-                  >
-                    <div className="text-sm font-semibold text-foreground">
-                      {opp.company}
-                    </div>
-                    <div className="text-sm font-medium text-muted-foreground">
-                      {opp.role}
-                    </div>
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge
-                    status={opp.status as Status}
-                    opportunityId={opp.id}
-                  />
-                </TableCell>
-                <TableCell className="text-sm font-medium text-muted-foreground">
-                  {formatDate(opp.appliedAt)}
-                </TableCell>
-                <TableCell className="text-sm font-medium text-muted-foreground">
-                  {formatRelativeDate(opp.updatedAt)}
-                </TableCell>
-              </TableRow>
-            ))}
+            {opportunities.map((opp, index) => {
+              const selected = selection.has(opp.id);
+              return (
+                <TableRow
+                  key={opp.id}
+                  data-state={selected ? "selected" : undefined}
+                >
+                  {bulkEnabled && (
+                    <TableCell className="w-10 pl-4">
+                      <Checkbox
+                        checked={selected}
+                        onMouseDown={(e: React.MouseEvent) => {
+                          // Suppress the browser's native shift-click text
+                          // selection so range select doesn't paint the rows.
+                          if (e.shiftKey) e.preventDefault();
+                        }}
+                        onClick={(e: React.MouseEvent) => {
+                          shiftPressedRef.current = e.shiftKey;
+                        }}
+                        onCheckedChange={() =>
+                          toggleRow(index, shiftPressedRef.current)
+                        }
+                        aria-label={`Select ${opp.role} at ${opp.company}`}
+                      />
+                    </TableCell>
+                  )}
+                  <TableCell className="py-4">
+                    <Link
+                      href={`/opportunities/${opp.id}`}
+                      className="hover:underline"
+                    >
+                      <div className="text-sm font-semibold text-foreground">
+                        {opp.company}
+                      </div>
+                      <div className="text-sm font-medium text-muted-foreground">
+                        {opp.role}
+                      </div>
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge
+                      status={opp.status as Status}
+                      opportunityId={opp.id}
+                    />
+                  </TableCell>
+                  <TableCell className="text-sm font-medium text-muted-foreground">
+                    {formatDate(opp.appliedAt)}
+                  </TableCell>
+                  <TableCell className="text-sm font-medium text-muted-foreground">
+                    {formatRelativeDate(opp.updatedAt)}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
