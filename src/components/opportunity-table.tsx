@@ -333,7 +333,7 @@ export function OpportunityTable({
                       />
                     </TableCell>
                   )}
-                  <TableCell className="py-4">
+                  <TableCell className="w-full py-4">
                     <Link
                       href={`/opportunities/${opp.id}`}
                       className="hover:underline"
@@ -346,16 +346,16 @@ export function OpportunityTable({
                       </div>
                     </Link>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="min-w-[200px]">
                     <StatusBadge
                       status={opp.status as Status}
                       opportunityId={opp.id}
                     />
                   </TableCell>
-                  <TableCell className="text-sm font-medium text-muted-foreground">
+                  <TableCell className="min-w-[180px] text-sm font-medium text-muted-foreground">
                     {formatDate(opp.appliedAt)}
                   </TableCell>
-                  <TableCell className="text-sm font-medium text-muted-foreground">
+                  <TableCell className="min-w-[180px] text-sm font-medium text-muted-foreground">
                     {formatRelativeDate(opp.updatedAt)}
                   </TableCell>
                 </TableRow>
