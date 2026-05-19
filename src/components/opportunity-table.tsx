@@ -8,6 +8,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,9 +23,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status-badge";
-import { bulkArchive } from "@/lib/actions/opportunities";
+import { bulkArchive, bulkUpdateStatus } from "@/lib/actions/opportunities";
 import type { Opportunity } from "@/lib/db/schema";
-import type { Status } from "@/lib/constants";
+import {
+  STATUSES,
+  STATUS_DOT_COLORS,
+  STATUS_LABELS,
+  type Status,
+} from "@/lib/constants";
 
 interface OpportunityTableProps {
   opportunities: Opportunity[];
@@ -113,6 +125,22 @@ function formatArchiveCounts(updated: number, unchanged: number): string {
   return parts.join(", ");
 }
 
+function formatStatusCounts(
+  updated: number,
+  unchanged: number,
+  status: Status,
+): string {
+  const label = STATUS_LABELS[status];
+  const parts: string[] = [];
+  if (updated > 0) {
+    parts.push(`Updated ${updated} to ${label}`);
+  }
+  if (unchanged > 0) {
+    parts.push(`${unchanged} already ${label.toLowerCase()}`);
+  }
+  return parts.join(", ");
+}
+
 export function OpportunityTable({
   opportunities,
   view,
@@ -122,7 +150,11 @@ export function OpportunityTable({
   const [isPending, startTransition] = useTransition();
   const shiftPressedRef = useRef(false);
   const searchParams = useSearchParams();
-  const bulkEnabled = view === "active";
+  // Bulk selection is enabled on both views — status change is meaningful in
+  // either. The action set in the bar varies by view (Archive button is
+  // gated to the Active list).
+  const bulkEnabled = true;
+  const canArchive = view === "active";
 
   // Clear selection whenever the URL search params change (filter chip click,
   // search keystroke, archive-view toggle).
@@ -213,6 +245,29 @@ export function OpportunityTable({
     });
   }
 
+  function handleBulkStatusChange(status: Status) {
+    const ids = Array.from(selection);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      const result = await bulkUpdateStatus(ids, status);
+      clearSelection();
+
+      const summary = formatStatusCounts(
+        result.updated,
+        result.unchanged,
+        status,
+      );
+      if (result.failed > 0) {
+        const failedPart = `${result.failed} failed`;
+        toast.error(summary ? `${summary}, ${failedPart}` : failedPart);
+      } else if (result.updated > 0) {
+        toast.success(summary);
+      } else if (result.unchanged > 0) {
+        toast(summary);
+      }
+    });
+  }
+
   if (opportunities.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -261,19 +316,48 @@ export function OpportunityTable({
                       {selection.size} selected
                     </span>
                     <div className="ml-auto flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleBulkArchive}
+                      <Select
+                        key={selection.size}
+                        onValueChange={(value) =>
+                          handleBulkStatusChange(value as Status)
+                        }
                         disabled={isPending}
                       >
-                        {isPending ? (
-                          <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        ) : (
-                          <Archive />
-                        )}
-                        Archive
-                      </Button>
+                        <SelectTrigger
+                          size="sm"
+                          aria-label="Change status"
+                          className="w-[170px]"
+                        >
+                          <SelectValue placeholder="Change status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUSES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT_COLORS[s]}`}
+                                />
+                                {STATUS_LABELS[s]}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {canArchive && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleBulkArchive}
+                          disabled={isPending}
+                        >
+                          {isPending ? (
+                            <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : (
+                            <Archive />
+                          )}
+                          Archive
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
