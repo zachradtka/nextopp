@@ -35,6 +35,7 @@ import {
   STATUS_LABELS,
   type Status,
 } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 interface OpportunityTableProps {
   opportunities: Opportunity[];
@@ -77,15 +78,39 @@ function formatRelativeDate(dateStr: string | null): string {
   return formatDate(dateStr);
 }
 
-function MobileCard({ opp }: { opp: Opportunity }) {
+interface MobileCardProps {
+  opp: Opportunity;
+  selected: boolean;
+  onToggle: () => void;
+}
+
+function MobileCard({ opp, selected, onToggle }: MobileCardProps) {
   return (
-    <div className="bg-card rounded-lg border border-border p-4">
-      {/* Top row: Role + Status */}
-      <div className="flex items-start justify-between gap-2">
-        <Link
-          href={`/opportunities/${opp.id}`}
-          className="flex-1 min-w-0"
+    <div
+      className={cn(
+        "bg-card rounded-lg border border-border p-4 transition-colors",
+        selected && "bg-primary/5",
+      )}
+    >
+      {/* Top row: Checkbox + Role + Status */}
+      <div className="flex items-start gap-3">
+        {/* Tap target is larger than the visible checkbox to avoid fat-finger
+            mishaps and to keep the card's Link distinct. */}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={`Select ${opp.role} at ${opp.company}`}
+          aria-pressed={selected}
+          className="-m-2 p-2 shrink-0"
         >
+          <Checkbox
+            checked={selected}
+            // Render-only — the wrapping button owns the tap.
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+        </button>
+        <Link href={`/opportunities/${opp.id}`} className="flex-1 min-w-0">
           <div className="text-[0.9375rem] font-bold text-foreground leading-snug">
             {opp.role}
           </div>
@@ -93,10 +118,7 @@ function MobileCard({ opp }: { opp: Opportunity }) {
             {opp.company}
           </div>
         </Link>
-        <StatusBadge
-          status={opp.status as Status}
-          opportunityId={opp.id}
-        />
+        <StatusBadge status={opp.status as Status} opportunityId={opp.id} />
       </div>
 
       {/* Divider */}
@@ -324,9 +346,21 @@ export function OpportunityTable({
   return (
     <>
       {/* Mobile: Card list */}
-      <div className="flex flex-col gap-3 md:hidden">
-        {opportunities.map((opp) => (
-          <MobileCard key={opp.id} opp={opp} />
+      <div
+        className={cn(
+          "flex flex-col gap-3 md:hidden",
+          // Leave space below so the floating bulk bar doesn't cover the
+          // last card. Includes safe-area inset for iOS home indicator.
+          bulkBarOpen && "pb-[calc(5rem+env(safe-area-inset-bottom))]",
+        )}
+      >
+        {opportunities.map((opp, index) => (
+          <MobileCard
+            key={opp.id}
+            opp={opp}
+            selected={selection.has(opp.id)}
+            onToggle={() => toggleRow(index, false)}
+          />
         ))}
       </div>
 
@@ -505,6 +539,87 @@ export function OpportunityTable({
           </TableBody>
         </Table>
       </div>
+
+      {/* Mobile: Floating bottom action bar */}
+      {bulkBarOpen && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg md:hidden"
+          role="toolbar"
+          aria-label="Bulk actions"
+        >
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={clearSelection}
+              disabled={isPending}
+              aria-label="Cancel selection"
+            >
+              <X />
+            </Button>
+            <span className="text-sm font-semibold text-foreground">
+              {selection.size}
+            </span>
+            <Select
+              key={selection.size}
+              onValueChange={(value) =>
+                handleBulkStatusChange(value as Status)
+              }
+              disabled={isPending}
+            >
+              <SelectTrigger
+                size="sm"
+                aria-label="Change status"
+                className="ml-auto"
+              >
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT_COLORS[s]}`}
+                      />
+                      {STATUS_LABELS[s]}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {canArchive && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkArchive}
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <Archive />
+                )}
+                Archive
+              </Button>
+            )}
+            {canUnarchive && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkUnarchive}
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <ArchiveRestore />
+                )}
+                Unarchive
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
