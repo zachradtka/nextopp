@@ -313,6 +313,11 @@ export function OpportunityTable({
                 <TableRow
                   key={opp.id}
                   data-state={selected ? "selected" : undefined}
+                  className={
+                    selected
+                      ? "bg-primary/5 hover:bg-primary/10 data-[state=selected]:bg-primary/5"
+                      : undefined
+                  }
                 >
                   {bulkEnabled && (
                     <TableCell className="w-10 pl-4">
