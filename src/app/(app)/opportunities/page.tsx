@@ -50,7 +50,10 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
       <StatusFilter selected={statusFilter} counts={statusCounts} searchParams={params} />
 
       {/* Table */}
-      <OpportunityTable opportunities={opportunities} />
+      <OpportunityTable
+        opportunities={opportunities}
+        view={showArchived ? "archive" : "active"}
+      />
     </div>
   );
 }
