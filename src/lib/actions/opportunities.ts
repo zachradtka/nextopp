@@ -477,6 +477,47 @@ export async function bulkUpdateStatus(
   return result;
 }
 
+export async function bulkUnarchive(
+  ids: string[]
+): Promise<BulkActionResult> {
+  const userId = await requireUserId();
+  const result: BulkActionResult = { updated: 0, unchanged: 0, failed: 0 };
+
+  for (const id of ids) {
+    try {
+      const existing = await db
+        .select({ archived: opportunities.archived })
+        .from(opportunities)
+        .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)))
+        .limit(1);
+
+      if (!existing[0]) {
+        result.failed += 1;
+        continue;
+      }
+      if (existing[0].archived === 0) {
+        result.unchanged += 1;
+        continue;
+      }
+
+      await db
+        .update(opportunities)
+        .set({
+          archived: 0,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)));
+
+      result.updated += 1;
+    } catch {
+      result.failed += 1;
+    }
+  }
+
+  revalidatePath("/opportunities");
+  return result;
+}
+
 export async function unarchiveOpportunity(id: string) {
   const userId = await requireUserId();
 

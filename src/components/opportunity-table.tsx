@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Archive, Calendar, X } from "lucide-react";
+import { Archive, ArchiveRestore, Calendar, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,7 +23,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status-badge";
-import { bulkArchive, bulkUpdateStatus } from "@/lib/actions/opportunities";
+import {
+  bulkArchive,
+  bulkUnarchive,
+  bulkUpdateStatus,
+} from "@/lib/actions/opportunities";
 import type { Opportunity } from "@/lib/db/schema";
 import {
   STATUSES,
@@ -125,6 +129,19 @@ function formatArchiveCounts(updated: number, unchanged: number): string {
   return parts.join(", ");
 }
 
+function formatUnarchiveCounts(updated: number, unchanged: number): string {
+  const parts: string[] = [];
+  if (updated > 0) {
+    parts.push(
+      `Unarchived ${updated} ${updated === 1 ? "opportunity" : "opportunities"}`,
+    );
+  }
+  if (unchanged > 0) {
+    parts.push(`${unchanged} not archived`);
+  }
+  return parts.join(", ");
+}
+
 function formatStatusCounts(
   updated: number,
   unchanged: number,
@@ -155,6 +172,7 @@ export function OpportunityTable({
   // gated to the Active list).
   const bulkEnabled = true;
   const canArchive = view === "active";
+  const canUnarchive = view === "archive";
 
   // Clear selection whenever the URL search params change (filter chip click,
   // search keystroke, archive-view toggle).
@@ -234,6 +252,25 @@ export function OpportunityTable({
       clearSelection();
 
       const summary = formatArchiveCounts(result.updated, result.unchanged);
+      if (result.failed > 0) {
+        const failedPart = `${result.failed} failed`;
+        toast.error(summary ? `${summary}, ${failedPart}` : failedPart);
+      } else if (result.updated > 0) {
+        toast.success(summary);
+      } else if (result.unchanged > 0) {
+        toast(summary);
+      }
+    });
+  }
+
+  function handleBulkUnarchive() {
+    const ids = Array.from(selection);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      const result = await bulkUnarchive(ids);
+      clearSelection();
+
+      const summary = formatUnarchiveCounts(result.updated, result.unchanged);
       if (result.failed > 0) {
         const failedPart = `${result.failed} failed`;
         toast.error(summary ? `${summary}, ${failedPart}` : failedPart);
@@ -356,6 +393,21 @@ export function OpportunityTable({
                             <Archive />
                           )}
                           Archive
+                        </Button>
+                      )}
+                      {canUnarchive && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleBulkUnarchive}
+                          disabled={isPending}
+                        >
+                          {isPending ? (
+                            <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : (
+                            <ArchiveRestore />
+                          )}
+                          Unarchive
                         </Button>
                       )}
                       <Button
