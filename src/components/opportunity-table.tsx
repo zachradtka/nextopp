@@ -299,7 +299,7 @@ export function OpportunityTable({
                     />
                   </TableHead>
                 )}
-                <TableHead className="w-full">Company &amp; Role</TableHead>
+                <TableHead className="w-full pl-4">Company &amp; Role</TableHead>
                 <TableHead className="min-w-[200px]">Status</TableHead>
                 <TableHead className="min-w-[180px]">Applied Date</TableHead>
                 <TableHead className="min-w-[180px]">Last Contact</TableHead>
@@ -333,7 +333,7 @@ export function OpportunityTable({
                       />
                     </TableCell>
                   )}
-                  <TableCell className="w-full py-4">
+                  <TableCell className="w-full py-4 pl-4">
                     <Link
                       href={`/opportunities/${opp.id}`}
                       className="hover:underline"
