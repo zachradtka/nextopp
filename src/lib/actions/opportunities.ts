@@ -2,12 +2,14 @@
 
 import { db } from "@/lib/db";
 import { opportunities, statusHistory, opportunityComments } from "@/lib/db/schema";
-import { eq, asc, desc, and, sql, inArray } from "drizzle-orm";
+import { eq, asc, and, sql, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 import type { Status } from "@/lib/constants";
 import { requireUserId } from "@/lib/auth-optional";
 import { parseFormData, type OpportunityFormState } from "@/lib/validations/opportunity";
+import { buildOrderBy } from "@/lib/sort/build-order-by";
+import type { SortState } from "@/lib/sort/types";
 
 async function assertOpportunityOwnership(opportunityId: string, userId: string) {
   const rows = await db
@@ -76,7 +78,8 @@ export async function getStatusCounts(
 export async function listOpportunities(
   statusFilter?: Status[],
   showArchived = false,
-  search?: string
+  search?: string,
+  sort?: SortState | null
 ) {
   const userId = await requireUserId();
   const conditions = [
@@ -100,7 +103,7 @@ export async function listOpportunities(
     .select()
     .from(opportunities)
     .where(and(...conditions))
-    .orderBy(desc(opportunities.createdAt));
+    .orderBy(...buildOrderBy(sort ?? null));
 }
 
 export async function getOpportunity(id: string) {

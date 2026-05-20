@@ -4,9 +4,16 @@ import { OpportunityTable } from "@/components/opportunity-table";
 import { StatusFilter } from "@/components/status-filter";
 import { listOpportunities, getStatusCounts } from "@/lib/actions/opportunities";
 import { STATUSES, type Status } from "@/lib/constants";
+import { parseSortParams } from "@/lib/sort/parse-sort-params";
 
 interface PageProps {
-  searchParams: Promise<{ status?: string; archived?: string; search?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    archived?: string;
+    search?: string;
+    sort?: string;
+    dir?: string;
+  }>;
 }
 
 function parseStatusParam(raw: string | undefined): Status[] {
@@ -23,8 +30,9 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
   const statusFilter = parseStatusParam(params.status);
   const showArchived = params.archived === "true";
   const search = params.search || undefined;
+  const sort = parseSortParams({ sort: params.sort, dir: params.dir });
   const [opportunities, statusCounts] = await Promise.all([
-    listOpportunities(statusFilter, showArchived, search),
+    listOpportunities(statusFilter, showArchived, search, sort),
     getStatusCounts(showArchived, search),
   ]);
 

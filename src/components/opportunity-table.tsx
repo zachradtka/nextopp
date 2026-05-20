@@ -438,7 +438,7 @@ export function OpportunityTable({
                 <TableHead className="w-full pl-4">Company &amp; Role</TableHead>
                 <TableHead className="min-w-[200px]">Status</TableHead>
                 <TableHead className="min-w-[180px]">Applied Date</TableHead>
-                <TableHead className="min-w-[180px]">Last Contact</TableHead>
+                <TableHead className="min-w-[180px]">Last Activity</TableHead>
               </TableRow>
             )}
           </TableHeader>
