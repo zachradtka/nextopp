@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SortableHeader } from "@/components/sortable-header";
 import { StatusBadge } from "@/components/status-badge";
 import {
   bulkArchive,
@@ -35,6 +36,7 @@ import {
   STATUS_LABELS,
   type Status,
 } from "@/lib/constants";
+import { parseSortParams } from "@/lib/sort/parse-sort-params";
 
 interface OpportunityTableProps {
   opportunities: Opportunity[];
@@ -170,6 +172,10 @@ export function OpportunityTable({
   const [isPending, startTransition] = useTransition();
   const shiftPressedRef = useRef(false);
   const searchParams = useSearchParams();
+  const currentSort = parseSortParams({
+    sort: searchParams.get("sort") ?? undefined,
+    dir: searchParams.get("dir") ?? undefined,
+  });
   // Bulk selection is enabled on both views — status change is meaningful in
   // either. The action set in the bar varies by view (Archive button is
   // gated to the Active list).
@@ -438,10 +444,34 @@ export function OpportunityTable({
                     />
                   </TableHead>
                 )}
-                <TableHead className="w-full pl-4">Company &amp; Role</TableHead>
-                <TableHead className="min-w-[200px]">Status</TableHead>
-                <TableHead className="min-w-[180px]">Applied Date</TableHead>
-                <TableHead className="min-w-[180px]">Last Activity</TableHead>
+                <SortableHeader
+                  column="company"
+                  currentSort={currentSort}
+                  className="w-full pl-4"
+                >
+                  Company &amp; Role
+                </SortableHeader>
+                <SortableHeader
+                  column="status"
+                  currentSort={currentSort}
+                  className="min-w-[200px]"
+                >
+                  Status
+                </SortableHeader>
+                <SortableHeader
+                  column="applied_at"
+                  currentSort={currentSort}
+                  className="min-w-[180px]"
+                >
+                  Applied Date
+                </SortableHeader>
+                <SortableHeader
+                  column="updated_at"
+                  currentSort={currentSort}
+                  className="min-w-[180px]"
+                >
+                  Last Activity
+                </SortableHeader>
               </TableRow>
             )}
           </TableHeader>
