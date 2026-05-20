@@ -64,7 +64,10 @@ function formatRelativeDate(dateStr: string | null): string {
   if (!dateStr) return "—";
   const date = new Date(dateStr);
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
+  // Clamp to 0: a server-written updatedAt can read slightly ahead of the
+  // browser clock (clock skew between the Vercel server and the client).
+  // Without this, Math.floor of a tiny negative diff yields -1 ("-1 days ago").
+  const diffMs = Math.max(0, now.getTime() - date.getTime());
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) return "Today";
@@ -438,7 +441,7 @@ export function OpportunityTable({
                 <TableHead className="w-full pl-4">Company &amp; Role</TableHead>
                 <TableHead className="min-w-[200px]">Status</TableHead>
                 <TableHead className="min-w-[180px]">Applied Date</TableHead>
-                <TableHead className="min-w-[180px]">Last Contact</TableHead>
+                <TableHead className="min-w-[180px]">Last Activity</TableHead>
               </TableRow>
             )}
           </TableHeader>
