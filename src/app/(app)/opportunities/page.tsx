@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { MobileSortSheet } from "@/components/mobile-sort-sheet";
 import { OpportunityTable } from "@/components/opportunity-table";
 import { StatusFilter } from "@/components/status-filter";
 import { listOpportunities, getStatusCounts } from "@/lib/actions/opportunities";
@@ -56,6 +57,11 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
 
       {/* Filters */}
       <StatusFilter selected={statusFilter} counts={statusCounts} searchParams={params} />
+
+      {/* Mobile-only sort pill, between filter chips and the card list */}
+      <div className="md:hidden">
+        <MobileSortSheet />
+      </div>
 
       {/* Table */}
       <OpportunityTable
