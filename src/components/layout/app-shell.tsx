@@ -3,14 +3,16 @@
 import { Suspense, useState } from "react";
 import { Sidebar } from "./sidebar";
 import { TopBar } from "./top-bar";
+import type { FeatureFlags } from "./nav-items";
 
 interface AppShellProps {
   children: React.ReactNode;
   user: { name?: string | null; email?: string | null; image?: string | null } | null;
   authEnabled: boolean;
+  flags: FeatureFlags;
 }
 
-export function AppShell({ children, user, authEnabled }: AppShellProps) {
+export function AppShell({ children, user, authEnabled, flags }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -21,6 +23,7 @@ export function AppShell({ children, user, authEnabled }: AppShellProps) {
           collapsed={collapsed}
           onToggle={() => setCollapsed((c) => !c)}
           authEnabled={authEnabled}
+          flags={flags}
           mobileOpen={mobileOpen}
           onMobileClose={() => setMobileOpen(false)}
         />
@@ -29,6 +32,7 @@ export function AppShell({ children, user, authEnabled }: AppShellProps) {
         <Suspense fallback={<div className="h-14 shrink-0 border-b" />}>
           <TopBar
             user={user}
+            showAlerts={flags.alerts}
             onMobileMenuClick={() => setMobileOpen(true)}
           />
         </Suspense>

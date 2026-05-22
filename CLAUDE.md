@@ -34,6 +34,7 @@ npm run import -- <csv>  # Import opportunities from CSV
 - Email magic link requires `AUTH_RESEND_KEY` (Resend API key) and optionally `AUTH_EMAIL_FROM`
 - Next.js 16 uses `proxy.ts` instead of `middleware.ts`
 - Drizzle config requires `dialect: "turso"` (not `"sqlite"`) when using `TURSO_DATABASE_URL`
+- Feature flags (gating unbuilt pages) are defined in `src/lib/flags.ts` — add new flags there; see `docs/adr/0001-vercel-flags-sdk-over-env-checks.md`
 
 ## Project Decisions
 
