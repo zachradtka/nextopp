@@ -12,26 +12,36 @@ import { flag } from "flags/next";
  * guard in the page, and its `flag:` key in nav-items.ts.
  */
 
+/**
+ * True only when the env var holds "true". Tolerant of surrounding
+ * whitespace and casing so a hand-typed `.env.local` value (or Vercel's
+ * Boolean-typed variable, which serialises to the string "true") can't
+ * silently misfire. Anything else — including unset — is off.
+ */
+function isEnabled(value: string | undefined): boolean {
+  return value?.trim().toLowerCase() === "true";
+}
+
 export const dashboardFlag = flag<boolean>({
   key: "dashboard",
   defaultValue: false,
-  decide: () => process.env.FLAG_DASHBOARD === "true",
+  decide: () => isEnabled(process.env.FLAG_DASHBOARD),
 });
 
 export const insightsFlag = flag<boolean>({
   key: "insights",
   defaultValue: false,
-  decide: () => process.env.FLAG_INSIGHTS === "true",
+  decide: () => isEnabled(process.env.FLAG_INSIGHTS),
 });
 
 export const settingsFlag = flag<boolean>({
   key: "settings",
   defaultValue: false,
-  decide: () => process.env.FLAG_SETTINGS === "true",
+  decide: () => isEnabled(process.env.FLAG_SETTINGS),
 });
 
 export const alertsFlag = flag<boolean>({
   key: "alerts",
   defaultValue: false,
-  decide: () => process.env.FLAG_ALERTS === "true",
+  decide: () => isEnabled(process.env.FLAG_ALERTS),
 });
