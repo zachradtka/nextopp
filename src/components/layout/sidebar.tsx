@@ -3,11 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
-  LayoutDashboard,
   Briefcase,
-  BarChart3,
-  Archive,
-  Settings,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -16,22 +12,18 @@ import {
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/opportunities", label: "Opportunities", icon: Briefcase },
-  { href: "/insights", label: "Insights", icon: BarChart3 },
-  { href: "/opportunities?archived=true", label: "Archive", icon: Archive },
-];
-
-const bottomItems = [
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+import {
+  navItems,
+  bottomItems,
+  filterNavItems,
+  type FeatureFlags,
+} from "@/components/layout/nav-items";
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
   authEnabled: boolean;
+  flags: FeatureFlags;
   mobileOpen: boolean;
   onMobileClose: () => void;
 }
@@ -87,12 +79,16 @@ export function Sidebar({
   collapsed,
   onToggle,
   authEnabled,
+  flags,
   mobileOpen,
   onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const archived = searchParams.get("archived") === "true";
+
+  const mainNav = filterNavItems(navItems, flags);
+  const bottomNav = filterNavItems(bottomItems, flags);
 
   const sidebarContent = (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
@@ -119,7 +115,7 @@ export function Sidebar({
 
       {/* Main nav */}
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {navItems.map((item) => (
+        {mainNav.map((item) => (
           <NavLink
             key={item.href}
             {...item}
@@ -132,7 +128,7 @@ export function Sidebar({
 
       {/* Bottom nav */}
       <div className="space-y-1 border-t border-sidebar-border px-3 py-4">
-        {bottomItems.map((item) => (
+        {bottomNav.map((item) => (
           <NavLink
             key={item.href}
             {...item}

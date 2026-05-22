@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 
 interface TopBarProps {
   user: { name?: string | null; email?: string | null; image?: string | null } | null;
+  /** Show the notifications bell — gated by the Alerts feature flag. */
+  showAlerts: boolean;
   onMobileMenuClick: () => void;
 }
 
@@ -39,7 +41,7 @@ function UserAvatar({
   );
 }
 
-export function TopBar({ user, onMobileMenuClick }: TopBarProps) {
+export function TopBar({ user, showAlerts, onMobileMenuClick }: TopBarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentSearch = searchParams.get("search") ?? "";
@@ -113,9 +115,14 @@ export function TopBar({ user, onMobileMenuClick }: TopBarProps) {
 
       {/* Right side */}
       <div className="ml-auto flex items-center gap-3">
-        <button className="relative p-2 rounded-md hover:bg-accent text-muted-foreground">
-          <Bell className="size-5" />
-        </button>
+        {showAlerts && (
+          <button
+            aria-label="Notifications"
+            className="relative p-2 rounded-md hover:bg-accent text-muted-foreground"
+          >
+            <Bell className="size-5" />
+          </button>
+        )}
 
         {user && (
           <div className="flex items-center gap-2">

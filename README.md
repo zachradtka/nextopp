@@ -217,6 +217,18 @@ Then run:
 npm run import -- path/to/your-data.csv local-dev-user
 ```
 
+## Feature flags
+
+Unfinished pages (Dashboard, Insights, Settings, Alerts) are hidden behind feature flags built on the [Vercel Flags SDK](https://flags-sdk.dev/). When a flag is off, the sidebar link is hidden and the route returns 404; when it's on, the link appears and the page renders.
+
+Flags default to **off** in every environment. Each is controlled by a `FLAG_*` environment variable — set it to `"true"` to enable that feature:
+
+- **Locally** — add `FLAG_DASHBOARD=true` (etc.) to `.env.local`.
+- **Vercel Preview** — set the `FLAG_*` var on the Preview environment scope to dogfood an in-progress feature via a preview link, without exposing it in Production.
+- **Vercel Production** — set the `FLAG_*` var on the Production scope when the feature is ready to ship.
+
+Flag definitions live in [src/lib/flags.ts](src/lib/flags.ts) — add new flags there.
+
 ## Scripts
 
 | Command | Description |
