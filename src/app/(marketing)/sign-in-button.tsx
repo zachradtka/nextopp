@@ -11,7 +11,7 @@ export function SignInButton() {
   return (
     <Link href="/login">
       <Button size="sm" className="sm:h-8 sm:px-3">
-        Sign in
+        Get started
       </Button>
     </Link>
   );
