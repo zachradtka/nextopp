@@ -1,0 +1,5 @@
+# The landing page only advertises shipped features
+
+The marketing page at `/` describes the product to anonymous visitors of the hosted `nextopp.app` deployment, and is a real conversion surface — so every claim on it must be true the moment a visitor signs up. Today the page advertises features that don't exist (e.g. Dashboard and Insights, which are gated as unbuilt stubs behind [`flags.ts`](../../src/lib/flags.ts) per [ADR-0001](./0001-vercel-flags-sdk-over-env-checks.md)); we are removing that vaporware as part of the redesign.
+
+We decided the page advertises **only features that are actually shipped** — no roadmap teasers, no "coming soon" sections, even for differentiated future work like AI matching. When a gated feature ships, **updating the landing copy and screenshots is part of that feature's PR**, alongside the flag removal and the sidebar gate removal already mandated by ADR-0001. The trade-off rejected here is the standard SaaS "tease the roadmap" move, which trades short-term marketing lift for credibility every time a visitor signs up and finds the teased feature missing — a leak we'd then have to fix anyway.
