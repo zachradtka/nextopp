@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Briefcase, ExternalLink } from "lucide-react";
+import { Briefcase } from "lucide-react";
 import { SignInButton } from "./sign-in-button";
 
 export default function MarketingLayout({
@@ -25,17 +25,23 @@ export default function MarketingLayout({
       <main className="flex-1">{children}</main>
 
       <footer className="border-t border-border">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:px-6 lg:px-8">
-          <span>NextOpp — open source</span>
-          <a
-            href="https://github.com/zachradtka/opportunity-tracker"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 hover:text-foreground"
-          >
-            View on GitHub
-            <ExternalLink className="size-3.5" />
-          </a>
+        <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 text-sm text-muted-foreground sm:grid-cols-3 sm:px-6 lg:px-8">
+          <nav aria-label="Product" className="flex flex-col gap-2">
+            {/* Slot reserved for future product links (e.g. /pricing, /changelog). */}
+          </nav>
+          <nav aria-label="Resources" className="flex flex-col gap-2">
+            {/* Slot reserved for future resource links (e.g. /docs, /about). */}
+          </nav>
+          <div className="flex items-start sm:justify-end">
+            <a
+              href="https://github.com/zachradtka/opportunity-tracker"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground"
+            >
+              View on GitHub
+            </a>
+          </div>
         </div>
       </footer>
     </div>
