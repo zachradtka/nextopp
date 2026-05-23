@@ -8,6 +8,14 @@ A job-opportunity tracker. The domain models a single user's progression of job 
 A single job posting the user is tracking — company + role + a few attributes. The central entity; every other concept hangs off it.
 _Avoid_: Application, lead, job (ambiguous), posting
 
+**Capture**:
+Creating a single **Opportunity** from a pasted job URL or job-description text via an LLM, instead of manual field entry.
+_Avoid_: Import (reserved for the CSV path), parse, scrape, AI add
+
+**Import**:
+Bulk creation of many **Opportunities** from a CSV file — an administrative operation, not part of the in-app flow.
+_Avoid_: Capture, upload, sync
+
 **Status**:
 Where the **Opportunity** sits in the application pipeline. One of a fixed set of seven values: `saved`, `applied`, `interviewing`, `offered`, `rejected`, `withdrawn`, `accepted`. Lives as a text column, not a separate table.
 _Avoid_: State, stage, phase
@@ -30,6 +38,7 @@ _Avoid_: Audit log, timeline (the UI uses "timeline" for the combined history + 
 
 ## Relationships
 
+- An **Opportunity** enters the system one of three ways: manual field entry, **Capture**, or **Import**.
 - An **Opportunity** has exactly one current **Status** and one **Archived** state.
 - An **Opportunity** has zero or more **Status History** entries, one per real **Status** transition.
 - **Status** and **Archived** are independent: any combination is valid.
@@ -47,3 +56,4 @@ _Avoid_: Audit log, timeline (the UI uses "timeline" for the combined history + 
 
 - **"Status" vs "Archived"** are sometimes spoken about as if interchangeable ("change its status to archived"), but in the schema they are independent columns. **Archived** is not a **Status** value. When a user says "mark as archived," they mean toggling the boolean, not changing the seven-value **Status** enum.
 - **"Timeline"** is used by the UI to mean the combined view of **Status History** + comments on an **Opportunity** detail page. When referring strictly to status transitions, use **Status History**.
+- **"Import"** was used informally for both the CSV bulk path and the AI single-opportunity feature — resolved: **Import** is CSV-only; the AI feature is **Capture**.
