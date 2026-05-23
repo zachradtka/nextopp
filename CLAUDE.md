@@ -79,3 +79,17 @@ Feature backlog is tracked in GitHub Issues: https://github.com/zachradtka/oppor
   - `FIRECRAWL_MAX_AGE_MS` controls Firecrawl caching
   - `FIRECRAWL_PROXY` can be `basic`, `enhanced`, or `auto`
 - When neither Firecrawl nor the AI Gateway is configured, the opportunity form renders exactly like the non-AI version
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues (`zachradtka/opportunity-tracker`) via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles, each mapped to its default label name. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
