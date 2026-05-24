@@ -25,7 +25,7 @@ export function Hero() {
       </div>
 
       <div className="mt-12 w-full sm:mt-16 lg:mt-20">
-        <ScreenshotFrame url="nextopp.app/opportunities">
+        <ScreenshotFrame>
           <Image
             src="/marketing/active-list.png"
             alt="The NextOpp active list, showing tracked opportunities across statuses"
