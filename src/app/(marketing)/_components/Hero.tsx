@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ScreenshotFrame } from "./ScreenshotFrame";
 
@@ -26,15 +25,20 @@ export function Hero() {
 
       <div className="mt-12 w-full sm:mt-16 lg:mt-20">
         <ScreenshotFrame>
-          <Image
-            src="/marketing/active-list.png"
-            alt="The NextOpp active list, showing tracked opportunities across statuses"
-            width={2880}
-            height={1800}
-            sizes="(min-width: 1024px) 72rem, 100vw"
-            className="block h-auto w-full"
-            priority
-          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <picture>
+            <source
+              srcSet="/marketing/active-list.png"
+              media="(min-width: 640px)"
+            />
+            <img
+              src="/marketing/active-list-mobile.png"
+              alt="The NextOpp active list, showing tracked opportunities across statuses"
+              width={390}
+              height={844}
+              className="block h-auto w-full"
+            />
+          </picture>
         </ScreenshotFrame>
       </div>
     </section>
