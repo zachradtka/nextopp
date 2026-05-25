@@ -34,7 +34,7 @@ export default function MarketingLayout({
           </nav>
           <div className="flex items-start sm:justify-end">
             <a
-              href="https://github.com/zachradtka/opportunity-tracker"
+              href="https://github.com/zachradtka/nextopp"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-foreground"

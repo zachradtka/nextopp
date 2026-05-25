@@ -25,7 +25,7 @@ Built with Next.js, SQLite, and Tailwind CSS.
 
 ```bash
 git clone <your-repo-url>
-cd opportunity-tracker
+cd nextopp
 npm install
 ```
 
@@ -135,11 +135,11 @@ curl -sSfL https://get.tur.so/install.sh | bash
 turso auth login
 
 # Create a database
-turso db create opportunity-tracker
+turso db create nextopp
 
 # Get your credentials
-turso db show opportunity-tracker --url
-turso db tokens create opportunity-tracker
+turso db show nextopp --url
+turso db tokens create nextopp
 ```
 
 ### 2. Push the schema to Turso
@@ -166,7 +166,7 @@ TURSO_DATABASE_URL=<your-url> TURSO_AUTH_TOKEN=<your-token> npm run db:push
 
 Once your app is deployed and you have your production URL:
 
-1. Set up one or more auth providers (see [Authentication](#authentication-optional) above), using your production URL for callback URLs (e.g. `https://your-app.vercel.app/api/auth/callback/github`)
+1. Set up one or more auth providers (see [Authentication](#authentication-optional) above), using your production URL for callback URLs (e.g. `https://nextopp.app/api/auth/callback/github`)
 2. Add these environment variables in Vercel:
 
 | Variable | Value |
