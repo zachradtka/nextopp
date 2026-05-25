@@ -63,7 +63,7 @@ TURSO_DATABASE_URL=<preview-url> TURSO_AUTH_TOKEN=<preview-token> \
 
 ## GitHub Issues
 
-Feature backlog is tracked in GitHub Issues: https://github.com/zachradtka/opportunity-tracker/issues
+Feature backlog is tracked in GitHub Issues: https://github.com/zachradtka/nextopp/issues
 
 ## AI Parsing
 
@@ -84,7 +84,7 @@ Feature backlog is tracked in GitHub Issues: https://github.com/zachradtka/oppor
 
 ### Issue tracker
 
-Issues are tracked in GitHub Issues (`zachradtka/opportunity-tracker`) via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues are tracked in GitHub Issues (`zachradtka/nextopp`) via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
