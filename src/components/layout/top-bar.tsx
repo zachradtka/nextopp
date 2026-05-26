@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Menu, Search, Bell, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -46,9 +46,14 @@ export function TopBar({ user, showAlerts, onMobileMenuClick }: TopBarProps) {
   const searchParams = useSearchParams();
   const currentSearch = searchParams.get("search") ?? "";
   const [value, setValue] = useState(currentSearch);
+  // Tracks the last search value we wrote to the URL ourselves, so the sync
+  // effect below can ignore our own round-trips and only react to external
+  // URL changes (back/forward navigation, link clicks).
+  const lastPushedRef = useRef(currentSearch);
 
-  // Sync local state when URL param changes externally
   useEffect(() => {
+    if (currentSearch === lastPushedRef.current) return;
+    lastPushedRef.current = currentSearch;
     setValue(currentSearch);
   }, [currentSearch]);
 
@@ -66,6 +71,7 @@ export function TopBar({ user, showAlerts, onMobileMenuClick }: TopBarProps) {
       } else {
         params.delete("search");
       }
+      lastPushedRef.current = trimmed;
       router.push(`/opportunities?${params.toString()}`);
     }, 300);
 
@@ -78,6 +84,7 @@ export function TopBar({ user, showAlerts, onMobileMenuClick }: TopBarProps) {
     params.delete("archived");
     params.delete("status");
     params.delete("search");
+    lastPushedRef.current = "";
     router.push(`/opportunities?${params.toString()}`);
   }, [searchParams, router]);
 
