@@ -36,6 +36,18 @@ _Avoid_: Closed, history, trash
 The append-only log of **Status** transitions for an **Opportunity**. A new entry is written only when **Status** actually changes — no-op transitions do not produce entries.
 _Avoid_: Audit log, timeline (the UI uses "timeline" for the combined history + comments view, but **Status History** specifically means the status-transition log)
 
+**Global search**:
+The search input in the top bar. Always present. Queries across all lists at once — today, the **Active list** and **Archive list** together. A hit from the **Archive list** is displayed with an "archived" indicator so it's not confused with an active **Opportunity**.
+_Avoid_: scope, scoped (overloaded — see Flagged ambiguities), command bar (suggests Cmd-K navigation, which this is not)
+
+**Page search**:
+A search input embedded in a single list page. Queries only that page's **Opportunities** — **Page search** on the **Active list** never reaches the **Archive list**, and vice versa. Independent from **Global search**: each maintains its own query state.
+_Avoid_: scope, scoped, list search, filter bar (the **Status** filter pills are the "filter bar")
+
+**Qualifier**:
+A `field:value` token inside a search query that restricts which field(s) the search term matches. Examples: `company:micro`, `status:applied`. Works identically inside **Global search** and **Page search**. A bare term (no qualifier) matches across all qualifier-addressable fields — the default behavior.
+_Avoid_: scope marker, field operator, facet (faceted-browse UIs are a different pattern with checkbox sidebars)
+
 ## Relationships
 
 - An **Opportunity** enters the system one of three ways: manual field entry, **Capture**, or **Import**.
@@ -43,6 +55,8 @@ _Avoid_: Audit log, timeline (the UI uses "timeline" for the combined history + 
 - An **Opportunity** has zero or more **Status History** entries, one per real **Status** transition.
 - **Status** and **Archived** are independent: any combination is valid.
 - The **Active list** and **Archive list** partition all **Opportunities** by **Archived**; every **Opportunity** appears in exactly one.
+- **Global search** spans both the **Active list** and the **Archive list**. **Page search** stays within a single list.
+- A **Qualifier** composes inside either a **Global search** or **Page search**: typing `company:micro` works the same way in both.
 
 ## Example dialogue
 
@@ -57,3 +71,4 @@ _Avoid_: Audit log, timeline (the UI uses "timeline" for the combined history + 
 - **"Status" vs "Archived"** are sometimes spoken about as if interchangeable ("change its status to archived"), but in the schema they are independent columns. **Archived** is not a **Status** value. When a user says "mark as archived," they mean toggling the boolean, not changing the seven-value **Status** enum.
 - **"Timeline"** is used by the UI to mean the combined view of **Status History** + comments on an **Opportunity** detail page. When referring strictly to status transitions, use **Status History**.
 - **"Import"** was used informally for both the CSV bulk path and the AI single-opportunity feature — resolved: **Import** is CSV-only; the AI feature is **Capture**.
+- **"Scoped" / "scope"** was used to mean both "limited to a particular page" (per-list search) and "limited to a particular field" (`company:micro` syntax) — two independent ideas. Resolved: the per-list concept is **Page search**, the per-field concept is a **Qualifier**. "Scope" / "scoped" should not appear in either sense in code or copy.
