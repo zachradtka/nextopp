@@ -48,6 +48,18 @@ _Avoid_: scope, scoped, list search, filter bar (the **Status** filter pills are
 A `field:value` token inside a search query that restricts which field(s) the search term matches. Examples: `company:micro`, `status:applied`. Works identically inside **Global search** and **Page search**. A bare term (no qualifier) matches across all qualifier-addressable fields — the default behavior.
 _Avoid_: scope marker, field operator, facet (faceted-browse UIs are a different pattern with checkbox sidebars)
 
+**Account**:
+A NextOpp identity — what a person signs in to and which owns their **Opportunities**. One Account per real person. An Account has one **Primary email** and zero or more **Linked accounts**. Mapped to the `users` table in the Auth.js schema (the naming inversion is intentional — see Flagged ambiguities).
+_Avoid_: user (the word still appears in code via Auth.js's `users` table, but in user-facing copy and design conversation prefer **Account**), profile
+
+**Linked account**:
+A sign-in provider attached to an **Account**. An Account may have multiple Linked accounts — for example GitHub plus Google plus LinkedIn — and signing in via any of them lands the person in the same Account. Each Linked account stores the provider name and the provider's account id; the **Primary email** is independent of which Linked account was used to sign in. Mapped to the `accounts` table in the Auth.js schema.
+_Avoid_: connection, identity (overloaded — see Flagged ambiguities), social account (only some Linked accounts are "social")
+
+**Primary email**:
+The **Account**'s anchor email. Set at signup from whichever provider was used first, and locked thereafter (changing it is a deferred feature). Used as the magic-link delivery target, as the address checked against `ALLOWED_USERS`, and as the user-visible "main" email in the UI. Other **Linked accounts** may claim different emails — those are stored on the **Linked account** row but never surface as the Account's primary identifier.
+_Avoid_: account email, main email
+
 ## Relationships
 
 - An **Opportunity** enters the system one of three ways: manual field entry, **Capture**, or **Import**.
@@ -57,6 +69,8 @@ _Avoid_: scope marker, field operator, facet (faceted-browse UIs are a different
 - The **Active list** and **Archive list** partition all **Opportunities** by **Archived**; every **Opportunity** appears in exactly one.
 - **Global search** spans both the **Active list** and the **Archive list**. **Page search** stays within a single list.
 - A **Qualifier** composes inside either a **Global search** or **Page search**: typing `company:micro` works the same way in both.
+- An **Account** owns its **Opportunities** outright; ownership never crosses Accounts (no shared, no transferred).
+- An **Account** has exactly one **Primary email** and zero or more **Linked accounts**; signing in via any **Linked account** lands the person in the same **Account**.
 
 ## Example dialogue
 
@@ -72,3 +86,4 @@ _Avoid_: scope marker, field operator, facet (faceted-browse UIs are a different
 - **"Timeline"** is used by the UI to mean the combined view of **Status History** + comments on an **Opportunity** detail page. When referring strictly to status transitions, use **Status History**.
 - **"Import"** was used informally for both the CSV bulk path and the AI single-opportunity feature — resolved: **Import** is CSV-only; the AI feature is **Capture**.
 - **"Scoped" / "scope"** was used to mean both "limited to a particular page" (per-list search) and "limited to a particular field" (`company:micro` syntax) — two independent ideas. Resolved: the per-list concept is **Page search**, the per-field concept is a **Qualifier**. "Scope" / "scoped" should not appear in either sense in code or copy.
+- **"Account" vs the Auth.js `accounts` table**: the Auth.js library names its two auth tables `users` (one row per identity) and `accounts` (one row per sign-in provider). Our domain inverts the labels: an **Account** is what we call the identity (Auth.js's `users` row), and a **Linked account** is what we call a sign-in provider (Auth.js's `accounts` row). The table names cannot change — they're dictated by `@auth/drizzle-adapter`. In code we use the library names; in user-facing copy, design conversation, and CONTEXT we use **Account** and **Linked account**. Don't let the table names drive vocabulary.
