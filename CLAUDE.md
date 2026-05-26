@@ -40,7 +40,7 @@ npm run import -- <csv>  # Import opportunities from CSV
 
 - **Single-user for now**: No `userId` on opportunities table. Multi-user support is planned (issue #1) but deferred.
 - **Statuses as enums, not a DB table**: Small fixed set, UI needs the metadata in code anyway. Simpler queries, no joins.
-- **SQLite/Turso over Postgres**: Zero-config local dev for open-source friendliness — clone, npm install, npm run dev.
+- **SQLite/Turso over Postgres**: ~~Zero-config local dev for open-source friendliness — clone, npm install, npm run dev.~~ **Superseded by [ADR-0003](docs/adr/0003-postgres-on-neon-for-full-text-search.md):** moving to Postgres on Neon to enable indexed substring search (`pg_trgm`) and per-PR DB branching. Local dev now requires Docker. The Quick Reference and Architecture sections above will be updated in the migration PR.
 
 ## Pushing to Turso
 
