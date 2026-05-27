@@ -34,11 +34,8 @@ yarn-error.log*
 .env*
 !.env.example
 
-# local database
-*.db
-
-# drizzle migrations (using db:push instead)
-/drizzle
+# local PGlite database
+/data
 
 # claude code
 .claude/

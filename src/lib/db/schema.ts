@@ -1,29 +1,31 @@
 import {
-  sqliteTable,
+  pgTable,
   text,
   integer,
+  boolean,
+  timestamp,
+  date,
   index,
   primaryKey,
-} from "drizzle-orm/sqlite-core";
-import { sql } from "drizzle-orm";
+} from "drizzle-orm/pg-core";
 
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name"),
   email: text("email").notNull().unique(),
-  emailVerified: integer("emailVerified", { mode: "timestamp_ms" }),
+  emailVerified: timestamp("emailVerified", { withTimezone: true, mode: "date" }),
   image: text("image"),
-  createdAt: text("created_at")
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
     .notNull()
-    .default(sql`(datetime('now'))`),
-  updatedAt: text("updated_at")
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" })
     .notNull()
-    .default(sql`(datetime('now'))`),
+    .defaultNow(),
 });
 
-export const accounts = sqliteTable(
+export const accounts = pgTable(
   "accounts",
   {
     userId: text("userId")
@@ -46,17 +48,17 @@ export const accounts = sqliteTable(
   ]
 );
 
-export const verificationTokens = sqliteTable(
+export const verificationTokens = pgTable(
   "verification_tokens",
   {
     identifier: text("identifier").notNull(),
     token: text("token").notNull(),
-    expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
+    expires: timestamp("expires", { withTimezone: true, mode: "date" }).notNull(),
   },
   (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })]
 );
 
-export const opportunities = sqliteTable(
+export const opportunities = pgTable(
   "opportunities",
   {
     id: text("id").primaryKey(),
@@ -75,18 +77,18 @@ export const opportunities = sqliteTable(
     employmentType: text("employment_type"),
     experienceLevel: text("experience_level"),
     jobId: text("job_id"),
-    datePosted: text("date_posted"),
+    datePosted: date("date_posted", { mode: "string" }),
     contactName: text("contact_name"),
     jobDescription: text("job_description"),
-    appliedAt: text("applied_at"),
-    respondedAt: text("responded_at"),
-    createdAt: text("created_at")
+    appliedAt: date("applied_at", { mode: "string" }),
+    respondedAt: date("responded_at", { mode: "string" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
       .notNull()
-      .default(sql`(datetime('now'))`),
-    updatedAt: text("updated_at")
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" })
       .notNull()
-      .default(sql`(datetime('now'))`),
-    archived: integer("archived").notNull().default(0),
+      .defaultNow(),
+    archived: boolean("archived").notNull().default(false),
   },
   (table) => [
     index("idx_opportunities_user_id").on(table.userId),
@@ -95,7 +97,7 @@ export const opportunities = sqliteTable(
   ]
 );
 
-export const statusHistory = sqliteTable(
+export const statusHistory = pgTable(
   "status_history",
   {
     id: text("id").primaryKey(),
@@ -104,9 +106,9 @@ export const statusHistory = sqliteTable(
       .references(() => opportunities.id, { onDelete: "cascade" }),
     status: text("status").notNull(),
     note: text("note"),
-    changedAt: text("changed_at")
+    changedAt: timestamp("changed_at", { withTimezone: true, mode: "string" })
       .notNull()
-      .default(sql`(datetime('now'))`),
+      .defaultNow(),
   },
   (table) => [
     index("idx_status_history_opp_changed").on(
@@ -116,7 +118,7 @@ export const statusHistory = sqliteTable(
   ]
 );
 
-export const opportunityComments = sqliteTable(
+export const opportunityComments = pgTable(
   "opportunity_comments",
   {
     id: text("id").primaryKey(),
@@ -124,12 +126,12 @@ export const opportunityComments = sqliteTable(
       .notNull()
       .references(() => opportunities.id, { onDelete: "cascade" }),
     body: text("body").notNull(),
-    createdAt: text("created_at")
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
       .notNull()
-      .default(sql`(datetime('now'))`),
-    updatedAt: text("updated_at")
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" })
       .notNull()
-      .default(sql`(datetime('now'))`),
+      .defaultNow(),
   },
   (table) => [
     index("idx_opportunity_comments_opp_created").on(

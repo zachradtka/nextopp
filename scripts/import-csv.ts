@@ -1,8 +1,10 @@
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
-import { readFileSync } from "fs";
+import { readFileSync, mkdirSync } from "node:fs";
 import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
+import { Pool } from "pg";
+import { PGlite } from "@electric-sql/pglite";
+import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
+import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import { opportunities, users, statusHistory } from "../src/lib/db/schema";
 
 const STATUS_MAP: Record<string, string> = {
@@ -51,11 +53,11 @@ function parseCsvLine(line: string): string[] {
   return fields;
 }
 
-async function ensureUser(
-  db: ReturnType<typeof drizzle>,
-  userId: string,
-  email: string
-) {
+type AnyDb =
+  | ReturnType<typeof drizzlePg>
+  | ReturnType<typeof drizzlePglite>;
+
+async function ensureUser(db: AnyDb, userId: string, email: string) {
   const existing = await db
     .select()
     .from(users)
@@ -80,23 +82,32 @@ async function main() {
     console.error(
       "Usage: npx tsx scripts/import-csv.ts <path-to-csv> <user-id>"
     );
-    console.error("Example: npx tsx scripts/import-csv.ts data.csv local-dev-user");
+    console.error(
+      "Example: npx tsx scripts/import-csv.ts data.csv local-dev-user"
+    );
     process.exit(1);
   }
 
-  const url = process.env.TURSO_DATABASE_URL;
-  const authToken = process.env.TURSO_AUTH_TOKEN;
+  const databaseUrl = process.env.DATABASE_URL;
+  let db: AnyDb;
+  let cleanup: () => Promise<void>;
 
-  const client = createClient(
-    url ? { url, authToken } : { url: "file:local.db" }
-  );
-  const db = drizzle(client);
+  if (databaseUrl) {
+    const pool = new Pool({ connectionString: databaseUrl });
+    db = drizzlePg(pool);
+    cleanup = () => pool.end();
+  } else {
+    mkdirSync("./data/pglite", { recursive: true });
+    const client = new PGlite("./data/pglite");
+    db = drizzlePglite(client);
+    cleanup = () => client.close();
+  }
 
   await ensureUser(db, userId, `${userId}@import`);
 
   const csv = readFileSync(csvPath, "utf-8");
   const lines = csv.split("\n").filter((l) => l.trim());
-  const [_header, ...rows] = lines;
+  const [, ...rows] = lines;
 
   let imported = 0;
   let skipped = 0;
@@ -113,8 +124,7 @@ async function main() {
     ] = parseCsvLine(line);
 
     const mappedStatus = STATUS_MAP[status.toLowerCase()] ?? "saved";
-    const mappedWorkMode =
-      WORK_MODE_MAP[workMode.toLowerCase()] ?? null;
+    const mappedWorkMode = WORK_MODE_MAP[workMode.toLowerCase()] ?? null;
     const now = new Date().toISOString();
 
     if (!company) {
@@ -136,7 +146,7 @@ async function main() {
       appliedAt: parseDate(applicationDate),
       createdAt: now,
       updatedAt: now,
-      archived: 0,
+      archived: false,
     });
 
     await db.insert(statusHistory).values({
@@ -152,6 +162,7 @@ async function main() {
     );
   }
 
+  await cleanup();
   console.log(
     `\nDone! Imported ${imported} opportunities, skipped ${skipped}.`
   );

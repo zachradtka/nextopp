@@ -1,19 +1,22 @@
 /**
  * Throwaway seed for landing-page screenshots.
  *
- * Creates a fresh SQLite DB at the path passed in argv[2], applies the
- * migration in drizzle/0000_groovy_vapor.sql, and imports
- * scripts/sample-data.csv against the `local-dev-user` user.
+ * Creates a fresh PGlite database at the path passed in argv[2], applies the
+ * migrations in drizzle/, and imports scripts/sample-data.csv against the
+ * `local-dev-user` user.
  *
- * Intentionally bypasses src/lib/db/index.ts so it never touches the
- * operator's local.db or Turso. Not committed-pipeline machinery — this
- * is a one-off support script for the marketing screenshots in issue #88
- * and #89.
+ * Intentionally points at a separate PGlite directory (not the operator's
+ * ./data/pglite) so it never touches their working dev database. Not
+ * committed-pipeline machinery — this is a one-off support script for the
+ * marketing screenshots in issue #88 and #89.
  */
 
-import { readFileSync } from "node:fs";
-import { createClient } from "@libsql/client";
+import { readFileSync, mkdirSync } from "node:fs";
 import { nanoid } from "nanoid";
+import { PGlite } from "@electric-sql/pglite";
+import { drizzle } from "drizzle-orm/pglite";
+import { migrate } from "drizzle-orm/pglite/migrator";
+import { opportunities, statusHistory, users } from "../src/lib/db/schema";
 
 const STATUS_MAP: Record<string, string> = {
   applied: "applied",
@@ -62,20 +65,28 @@ async function main() {
   const csvPath = process.argv[3] ?? "scripts/sample-data.csv";
   if (!dbPath) {
     console.error(
-      "Usage: tsx scripts/seed-marketing-demo.ts <db-path> [csv-path]"
+      "Usage: tsx scripts/seed-marketing-demo.ts <pglite-dir> [csv-path]"
     );
     process.exit(1);
   }
 
-  const url = dbPath.startsWith("file:") ? dbPath : `file:${dbPath}`;
-  const client = createClient({ url });
+  mkdirSync(dbPath, { recursive: true });
+  const client = new PGlite(dbPath);
+  const db = drizzle(client);
+  await migrate(db, { migrationsFolder: "./drizzle" });
 
   const userId = "local-dev-user";
   const now = new Date().toISOString();
-  await client.execute({
-    sql: "INSERT INTO users (id, name, email, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
-    args: [userId, "Demo User", "demo@nextopp.local", now, now],
-  });
+  await db
+    .insert(users)
+    .values({
+      id: userId,
+      name: "Demo User",
+      email: "demo@nextopp.local",
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoNothing();
 
   const csv = readFileSync(csvPath, "utf-8");
   const lines = csv.split("\n").filter((l) => l.trim());
@@ -83,41 +94,47 @@ async function main() {
 
   let imported = 0;
   for (const line of rows) {
-    const [applicationDate, company, role, workMode, locationDetails, status, jobUrl] =
-      parseCsvLine(line);
+    const [
+      applicationDate,
+      company,
+      role,
+      workMode,
+      locationDetails,
+      status,
+      jobUrl,
+    ] = parseCsvLine(line);
     if (!company) continue;
 
     const mappedStatus = STATUS_MAP[status.toLowerCase()] ?? "saved";
     const mappedWorkMode = WORK_MODE_MAP[workMode.toLowerCase()] ?? null;
     const id = nanoid();
 
-    await client.execute({
-      sql: `INSERT INTO opportunities
-        (id, user_id, company, role, url, status, work_mode, location, applied_at, created_at, updated_at, archived)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
-      args: [
-        id,
-        userId,
-        company,
-        role || "Unknown Role",
-        jobUrl || null,
-        mappedStatus,
-        mappedWorkMode,
-        locationDetails || null,
-        parseDate(applicationDate),
-        now,
-        now,
-      ],
+    await db.insert(opportunities).values({
+      id,
+      userId,
+      company,
+      role: role || "Unknown Role",
+      url: jobUrl || null,
+      status: mappedStatus,
+      workMode: mappedWorkMode,
+      location: locationDetails || null,
+      appliedAt: parseDate(applicationDate),
+      createdAt: now,
+      updatedAt: now,
+      archived: false,
     });
 
-    await client.execute({
-      sql: "INSERT INTO status_history (id, opportunity_id, status, changed_at) VALUES (?, ?, ?, ?)",
-      args: [nanoid(), id, mappedStatus, now],
+    await db.insert(statusHistory).values({
+      id: nanoid(),
+      opportunityId: id,
+      status: mappedStatus,
+      changedAt: now,
     });
 
     imported++;
   }
 
+  await client.close();
   console.log(`Seeded ${imported} opportunities into ${dbPath}`);
 }
 

@@ -48,7 +48,7 @@ export async function getStatusCounts(
   const userId = await requireUserId();
   const conditions = [
     eq(opportunities.userId, userId),
-    eq(opportunities.archived, showArchived ? 1 : 0),
+    eq(opportunities.archived, showArchived),
   ];
 
   if (search) {
@@ -84,7 +84,7 @@ export async function listOpportunities(
   const userId = await requireUserId();
   const conditions = [
     eq(opportunities.userId, userId),
-    eq(opportunities.archived, showArchived ? 1 : 0),
+    eq(opportunities.archived, showArchived),
   ];
 
   if (statusFilter && statusFilter.length > 0) {
@@ -377,7 +377,7 @@ export async function archiveOpportunity(id: string) {
   await db
     .update(opportunities)
     .set({
-      archived: 1,
+      archived: true,
       updatedAt: new Date().toISOString(),
     })
     .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)));
@@ -407,7 +407,7 @@ export async function bulkArchive(ids: string[]): Promise<BulkActionResult> {
         result.failed += 1;
         continue;
       }
-      if (existing[0].archived === 1) {
+      if (existing[0].archived) {
         result.unchanged += 1;
         continue;
       }
@@ -415,7 +415,7 @@ export async function bulkArchive(ids: string[]): Promise<BulkActionResult> {
       await db
         .update(opportunities)
         .set({
-          archived: 1,
+          archived: true,
           updatedAt: new Date().toISOString(),
         })
         .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)));
@@ -498,7 +498,7 @@ export async function bulkUnarchive(
         result.failed += 1;
         continue;
       }
-      if (existing[0].archived === 0) {
+      if (!existing[0].archived) {
         result.unchanged += 1;
         continue;
       }
@@ -506,7 +506,7 @@ export async function bulkUnarchive(
       await db
         .update(opportunities)
         .set({
-          archived: 0,
+          archived: false,
           updatedAt: new Date().toISOString(),
         })
         .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)));
@@ -527,7 +527,7 @@ export async function unarchiveOpportunity(id: string) {
   await db
     .update(opportunities)
     .set({
-      archived: 0,
+      archived: false,
       updatedAt: new Date().toISOString(),
     })
     .where(and(eq(opportunities.id, id), eq(opportunities.userId, userId)));

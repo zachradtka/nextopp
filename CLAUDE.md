@@ -7,19 +7,20 @@ Job opportunity tracking web app. Open source, single-user (multi-user planned �
 ## Quick Reference
 
 ```bash
-npm run dev          # Start dev server (uses local SQLite)
+npm run dev          # Start dev server (uses local PGlite at ./data/pglite)
 npm run build        # Production build
-npm run db:push      # Push schema changes to database
+npm run db:generate  # Generate a migration SQL file from schema changes
+npm run db:migrate   # Apply pending migrations (PGlite locally, Postgres via DATABASE_URL)
 npm run db:studio    # Browse data with Drizzle Studio
-npm run import -- <csv>  # Import opportunities from CSV
+npm run import -- <csv> <user-id>  # Import opportunities from CSV
 npm run email        # Preview email templates at http://localhost:3001
 ```
 
 ## Architecture
 
 - **Framework**: Next.js 16 (App Router, Server Components, Server Actions)
-- **Database**: SQLite locally (`local.db`), Turso (libSQL) in production — auto-switches via `TURSO_DATABASE_URL` env var
-- **ORM**: Drizzle — schema in `src/lib/db/schema.ts`, client in `src/lib/db/index.ts`
+- **Database**: Postgres. Local dev uses [PGlite](https://pglite.dev) (file-backed at `./data/pglite`); production/preview uses Postgres on Neon via the Vercel-Neon integration (`DATABASE_URL`). The runtime client in `src/lib/db/index.ts` switches based on `DATABASE_URL`.
+- **ORM**: Drizzle — schema in `src/lib/db/schema.ts`, client in `src/lib/db/index.ts`. Migrations live in `drizzle/` and are checked into the repo.
 - **Auth**: Auth.js (NextAuth v5) with GitHub, Google, LinkedIn OAuth + email magic link — disabled by default via `AUTH_DISABLED=true`
 - **Styling**: Tailwind CSS v4 + shadcn/ui (uses `@base-ui/react`, NOT Radix — no `asChild` prop)
 - **Deployment**: Vercel, auto-deploys on push to main
@@ -34,31 +35,32 @@ npm run email        # Preview email templates at http://localhost:3001
 - Auth providers are configured dynamically — only providers with env vars set appear on the sign-in page
 - Email magic link requires `AUTH_RESEND_KEY` (Resend API key) and optionally `AUTH_EMAIL_FROM`
 - Next.js 16 uses `proxy.ts` instead of `middleware.ts`
-- Drizzle config requires `dialect: "turso"` (not `"sqlite"`) when using `TURSO_DATABASE_URL`
+- Drizzle dialect is `postgresql`. Use `db:generate` + `db:migrate` (never `db:push`) so PR-branch Neon DBs get the same SQL the operator's local PGlite gets.
+- Timestamps marshal as ISO strings (`mode: "string"` on the schema); auth-adapter columns (`emailVerified`, `expires`) use `mode: "date"` because the Auth.js adapter sends Date objects.
 - Feature flags (gating unbuilt pages) are defined in `src/lib/flags.ts` — add new flags there; see `docs/adr/0001-vercel-flags-sdk-over-env-checks.md`
 
 ## Project Decisions
 
 - **Single-user for now**: No `userId` on opportunities table. Multi-user support is planned (issue #1) but deferred.
 - **Statuses as enums, not a DB table**: Small fixed set, UI needs the metadata in code anyway. Simpler queries, no joins.
-- **SQLite/Turso over Postgres**: ~~Zero-config local dev for open-source friendliness — clone, npm install, npm run dev.~~ **Superseded by [ADR-0003](docs/adr/0003-postgres-on-neon-for-full-text-search.md):** moving to Postgres on Neon to enable indexed substring search (`pg_trgm`) and per-PR DB branching. Local dev now requires Docker. The Quick Reference and Architecture sections above will be updated in the migration PR.
+- **Postgres everywhere, PGlite for local**: See [ADR-0003](docs/adr/0003-postgres-on-neon-for-full-text-search.md). Production runs Neon Postgres; local dev runs PGlite (a WASM build of Postgres bundled into the app process) at `./data/pglite/`. Zero-config dev — no Docker, no separate DB service. PGlite ships real Postgres extensions (`pg_trgm`, `btree_gin`) compiled to WASM, so behavior matches Neon closely.
 
-## Pushing to Turso
+## Migrations workflow
 
-When pushing schema changes to the production database:
+1. Edit the schema in `src/lib/db/schema.ts`.
+2. Run `npm run db:generate` — Drizzle Kit diffs the schema against the last migration in `drizzle/` and writes a new `NNNN_*.sql` file. Commit it.
+3. Run `npm run db:migrate` — applies any pending migrations to your local PGlite at `./data/pglite/`. With `DATABASE_URL` set, it targets that Postgres instead.
 
-```bash
-TURSO_DATABASE_URL=<url> TURSO_AUTH_TOKEN=<token> npm run db:push
-```
+The Vercel build runs `npm run db:migrate` against the per-environment `DATABASE_URL` so preview branches and production both pick up new migrations automatically.
 
 ## Preview environment
 
-Vercel preview deploys run against a separate Turso database with `AUTH_DISABLED=true`. Production and preview env vars are scoped per-environment in Vercel **Settings → Environment Variables** (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `AUTH_DISABLED`, and the OAuth/`AUTH_SECRET` vars).
+Vercel preview deploys run against a Neon **branch** (a copy-on-write fork of the production Neon DB) with `AUTH_DISABLED=true`. The Vercel-Neon integration provisions one DB branch per PR and injects `DATABASE_URL` into the preview env. Other per-environment vars (`AUTH_DISABLED`, OAuth/`AUTH_SECRET`) are scoped in Vercel **Settings → Environment Variables**.
 
-When `AUTH_DISABLED=true`, the app runs as a single hardcoded user with id `local-dev-user` (see [src/lib/auth-optional.ts](src/lib/auth-optional.ts)). When seeding the preview db, pass `local-dev-user` as the import script's user-id arg — using a different id leaves opportunities orphaned and the UI shows empty.
+When `AUTH_DISABLED=true`, the app runs as a single hardcoded user with id `local-dev-user` (see [src/lib/auth-optional.ts](src/lib/auth-optional.ts)). When seeding a preview DB, pass `local-dev-user` as the import script's user-id arg — using a different id leaves opportunities orphaned and the UI shows empty.
 
 ```bash
-TURSO_DATABASE_URL=<preview-url> TURSO_AUTH_TOKEN=<preview-token> \
+DATABASE_URL=<preview-postgres-url> \
   npm run import -- scripts/sample-data.csv local-dev-user
 ```
 
