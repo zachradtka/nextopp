@@ -55,14 +55,14 @@ export async function getStatusCounts(
     const escaped = search.replace(/[%_\\]/g, "\\$&");
     const pattern = `%${escaped}%`;
     conditions.push(
-      sql`(${opportunities.company} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.role} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.jobId} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.location} LIKE ${pattern} ESCAPE '\\')`
+      sql`(${opportunities.company} ILIKE ${pattern} ESCAPE '\\' OR ${opportunities.role} ILIKE ${pattern} ESCAPE '\\' OR ${opportunities.jobId} ILIKE ${pattern} ESCAPE '\\' OR ${opportunities.location} ILIKE ${pattern} ESCAPE '\\')`
     );
   }
 
   const rows = await db
     .select({
       status: opportunities.status,
-      count: sql<number>`count(*)`,
+      count: sql<number>`count(*)::int`,
     })
     .from(opportunities)
     .where(and(...conditions))
@@ -95,7 +95,7 @@ export async function listOpportunities(
     const escaped = search.replace(/[%_\\]/g, "\\$&");
     const pattern = `%${escaped}%`;
     conditions.push(
-      sql`(${opportunities.company} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.role} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.jobId} LIKE ${pattern} ESCAPE '\\' OR ${opportunities.location} LIKE ${pattern} ESCAPE '\\')`
+      sql`(${opportunities.company} ILIKE ${pattern} ESCAPE '\\' OR ${opportunities.role} ILIKE ${pattern} ESCAPE '\\' OR ${opportunities.jobId} ILIKE ${pattern} ESCAPE '\\' OR ${opportunities.location} ILIKE ${pattern} ESCAPE '\\')`
     );
   }
 

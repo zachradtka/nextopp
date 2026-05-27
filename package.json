@@ -8,10 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx scripts/migrate.ts",
+    "db:migrate": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:down": "docker compose down",
-    "import": "tsx scripts/import-csv.ts",
+    "import": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/import-csv.ts",
     "email": "email dev --dir emails --port 3001",
     "test": "vitest run",
     "test:watch": "vitest"
