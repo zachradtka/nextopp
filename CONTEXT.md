@@ -12,6 +12,10 @@ _Avoid_: Application, lead, job (ambiguous), posting
 Creating a single **Opportunity** from a pasted job URL or job-description text via an LLM, instead of manual field entry.
 _Avoid_: Import (reserved for the CSV path), parse, scrape, AI add
 
+**Capture attempt**:
+One user-initiated **Capture**, from form submission through the parse-and-return server action. The unit of observability — every Capture attempt produces exactly one Langfuse trace, tagged with `userId`, source type (`url` or `text`), model, prompt version, duration, and (on failure) the `ParseJobPostingErrorCode`. The Opportunity that ultimately gets created (or not) is a separate downstream action; a Capture attempt's success means "the parse returned usable structured data," not "an Opportunity exists."
+_Avoid_: Parse call, LLM call (Capture attempts span both the LLM-direct text path and the LLM-inside-Firecrawl URL path; calling them "LLM calls" hides the URL path)
+
 **Import**:
 Bulk creation of many **Opportunities** from a CSV file — an administrative operation, not part of the in-app flow.
 _Avoid_: Capture, upload, sync
@@ -63,6 +67,7 @@ _Avoid_: account email, main email
 ## Relationships
 
 - An **Opportunity** enters the system one of three ways: manual field entry, **Capture**, or **Import**.
+- A **Capture attempt** produces zero or one parsed result. On success, the user may create, edit, or discard the resulting **Opportunity** in a separate downstream action — the **Capture attempt** itself ends when the parse server action returns.
 - An **Opportunity** has exactly one current **Status** and one **Archived** state.
 - An **Opportunity** has zero or more **Status History** entries, one per real **Status** transition.
 - **Status** and **Archived** are independent: any combination is valid.
