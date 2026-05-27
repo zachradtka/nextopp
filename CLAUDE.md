@@ -67,6 +67,12 @@ DATABASE_URL=<preview-postgres-url> \
   npm run import -- scripts/sample-data.csv local-dev-user
 ```
 
+## Search
+
+Substring search across `company`, `role`, `jobId`, and `location` on the opportunities list page. Case-insensitive (`ILIKE`), backed by `pg_trgm` GIN indexes (`gin_trgm_ops`) so the query plan is an index scan rather than a sequential scan. No language-aware stemming — searching `"acme"` matches `"Acme Corp"`, and `"R-123"` matches `"R-12345"`. `contactName` is intentionally NOT indexed in v1 (see [ADR-0003](docs/adr/0003-postgres-on-neon-for-full-text-search.md)).
+
+If you add a new searchable column, add it both to the `ILIKE` OR-chain in [src/lib/actions/opportunities.ts](src/lib/actions/opportunities.ts) AND to the GIN index list in [src/lib/db/schema.ts](src/lib/db/schema.ts), then `npm run db:generate`.
+
 ## Email Templates
 
 Magic-link sign-in emails are rendered with [react-email](https://react.email) from [emails/magic-link.tsx](emails/magic-link.tsx) and sent through Resend (override in [src/lib/auth.ts](src/lib/auth.ts)). Iterate visually with `npm run email` (port 3001) — keep `npm run dev` running too so the icon resolves from `http://localhost:3000/email/icon.png`.

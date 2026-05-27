@@ -8,6 +8,7 @@ import {
   index,
   primaryKey,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: text("id")
@@ -94,6 +95,26 @@ export const opportunities = pgTable(
     index("idx_opportunities_user_id").on(table.userId),
     index("idx_opportunities_user_status").on(table.userId, table.status),
     index("idx_opportunities_user_archived").on(table.userId, table.archived),
+    // Trigram GIN indexes back the ILIKE '%x%' substring search in
+    // listOpportunities / getStatusCounts. Requires the pg_trgm extension
+    // (created in the migration alongside these indexes). contactName is
+    // intentionally not indexed in v1 — see issue #97.
+    index("idx_opportunities_company_trgm").using(
+      "gin",
+      sql`${table.company} gin_trgm_ops`
+    ),
+    index("idx_opportunities_role_trgm").using(
+      "gin",
+      sql`${table.role} gin_trgm_ops`
+    ),
+    index("idx_opportunities_job_id_trgm").using(
+      "gin",
+      sql`${table.jobId} gin_trgm_ops`
+    ),
+    index("idx_opportunities_location_trgm").using(
+      "gin",
+      sql`${table.location} gin_trgm_ops`
+    ),
   ]
 );
 
