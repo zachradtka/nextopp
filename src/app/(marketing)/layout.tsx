@@ -8,7 +8,7 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="dark flex h-full flex-col overflow-y-auto bg-background">
+    <div className="dark flex h-full flex-col overflow-y-auto bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link
