@@ -36,7 +36,7 @@ interface PageProps {
   searchParams: Promise<{
     callbackUrl?: string;
     error?: string;
-    verified?: string;
+    type?: string;
   }>;
 }
 
@@ -52,7 +52,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const callbackUrl = params.callbackUrl || "/opportunities";
   const errorMessage = getErrorMessage(params.error);
-  const isVerified = params.verified === "1";
+  const isVerified = params.type === "email";
 
   const enabled = getEnabledProviders();
   const hasOAuth = enabled.github || enabled.google || enabled.linkedin;

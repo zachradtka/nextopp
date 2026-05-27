@@ -12,6 +12,7 @@ npm run build        # Production build
 npm run db:push      # Push schema changes to database
 npm run db:studio    # Browse data with Drizzle Studio
 npm run import -- <csv>  # Import opportunities from CSV
+npm run email        # Preview email templates at http://localhost:3001
 ```
 
 ## Architecture
@@ -60,6 +61,18 @@ When `AUTH_DISABLED=true`, the app runs as a single hardcoded user with id `loca
 TURSO_DATABASE_URL=<preview-url> TURSO_AUTH_TOKEN=<preview-token> \
   npm run import -- scripts/sample-data.csv local-dev-user
 ```
+
+## Email Templates
+
+Magic-link sign-in emails are rendered with [react-email](https://react.email) from [emails/magic-link.tsx](emails/magic-link.tsx) and sent through Resend (override in [src/lib/auth.ts](src/lib/auth.ts)). Iterate visually with `npm run email` (port 3001) — keep `npm run dev` running too so the icon resolves from `http://localhost:3000/email/icon.png`.
+
+The email icon is a PNG generated from the app's SVG favicon. Whenever you change [src/app/icon.svg](src/app/icon.svg), regenerate the email PNG:
+
+```bash
+rsvg-convert -w 96 -h 96 src/app/icon.svg -o public/email/icon.png
+```
+
+96×96 source, displayed at 48×48 in the template — the 2× resolution keeps it crisp on retina email clients. `rsvg-convert` comes from the `librsvg2-bin` package (`sudo apt install librsvg2-bin`).
 
 ## GitHub Issues
 
