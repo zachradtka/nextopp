@@ -11,6 +11,7 @@
     "db:migrate": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:down": "docker compose down",
+    "migrate-turso-to-neon": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/migrate-turso-to-neon.ts",
     "import": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/import-csv.ts",
     "email": "email dev --dir emails --port 3001",
     "test": "vitest run",
@@ -49,6 +50,7 @@
   "devDependencies": {
     "@ai-hero/sandcastle": "^0.5.11",
     "@electric-sql/pglite": "^0.4.6",
+    "@libsql/client": "^0.17.3",
     "@react-email/ui": "^6.4.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
