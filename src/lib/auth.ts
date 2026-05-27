@@ -4,6 +4,8 @@ import Google from "next-auth/providers/google";
 import LinkedIn from "next-auth/providers/linkedin";
 import Resend from "next-auth/providers/resend";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { Resend as ResendClient } from "resend";
+import { MagicLinkEmail } from "../../emails/magic-link";
 import { db } from "./db";
 import { users, accounts, verificationTokens } from "./db/schema";
 
@@ -34,10 +36,34 @@ function buildProviders() {
     providers.push(LinkedIn);
   }
   if (enabled.resend) {
+    const apiKey = process.env.AUTH_RESEND_KEY!;
+    const from =
+      process.env.AUTH_EMAIL_FROM ?? "NextOpp <onboarding@resend.dev>";
+    const resendClient = new ResendClient(apiKey);
+
     providers.push(
       Resend({
-        apiKey: process.env.AUTH_RESEND_KEY,
-        from: process.env.AUTH_EMAIL_FROM ?? "NextOpp <noreply@resend.dev>",
+        apiKey,
+        from,
+        maxAge: 30 * 60,
+        async sendVerificationRequest({ identifier: email, url }) {
+          const { host, origin } = new URL(url);
+          const { error } = await resendClient.emails.send({
+            from,
+            to: email,
+            subject: "Sign in to NextOpp",
+            react: MagicLinkEmail({
+              url,
+              host,
+              iconUrl: `${origin}/email/icon.png`,
+            }),
+          });
+          if (error) {
+            throw new Error(
+              `Resend failed to send magic link: ${error.message}`
+            );
+          }
+        },
       })
     );
   }
@@ -55,7 +81,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/login",
     error: "/login",
-    verifyRequest: "/login?verified=1",
+    verifyRequest: "/login",
   },
   callbacks: {
     signIn({ user, profile, account }) {
