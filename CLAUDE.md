@@ -21,7 +21,7 @@ npm test             # Run vitest (uses in-memory PGlite — no Docker needed)
 ## Architecture
 
 - **Framework**: Next.js 16 (App Router, Server Components, Server Actions)
-- **Database**: Postgres. Local dev runs a `postgres:16` container via [docker-compose.yml](docker-compose.yml); production and preview use Postgres on Neon via the Vercel-Neon integration (`DATABASE_URL`). The runtime client in `src/lib/db/index.ts` always uses `node-postgres` (`pg.Pool`) — same driver against either backend.
+- **Database**: Postgres. Local dev runs a `postgres:17` container via [docker-compose.yml](docker-compose.yml); production and preview use Postgres on Neon via the Vercel-Neon integration (`DATABASE_URL`). The runtime client in `src/lib/db/index.ts` always uses `node-postgres` (`pg.Pool`) — same driver against either backend.
 - **Tests**: [in-memory PGlite](https://pglite.dev) (a WASM build of Postgres) — `npm test` doesn't need Docker. Real Postgres semantics, no separate service to manage.
 - **ORM**: Drizzle — schema in `src/lib/db/schema.ts`, client in `src/lib/db/index.ts`. Migrations live in `drizzle/` and are checked into the repo.
 - **Auth**: Auth.js (NextAuth v5) with GitHub, Google, LinkedIn OAuth + email magic link — disabled by default via `AUTH_DISABLED=true`
@@ -46,7 +46,7 @@ npm test             # Run vitest (uses in-memory PGlite — no Docker needed)
 
 - **Single-user for now**: No `userId` on opportunities table. Multi-user support is planned (issue #1) but deferred.
 - **Statuses as enums, not a DB table**: Small fixed set, UI needs the metadata in code anyway. Simpler queries, no joins.
-- **Docker Postgres locally, Neon in prod, PGlite for tests**: See [ADR-0003](docs/adr/0003-postgres-on-neon-for-full-text-search.md). Production and preview run on Neon. Local dev runs `postgres:16` in Docker for prod-parity (PGlite's WASM was tried first but its concurrency story under Next.js HMR was too noisy). Tests still use in-memory PGlite because they don't have HMR — fastest setup, no Docker dependency for `npm test` / CI.
+- **Docker Postgres locally, Neon in prod, PGlite for tests**: See [ADR-0003](docs/adr/0003-postgres-on-neon-for-full-text-search.md). Production and preview run on Neon. Local dev runs `postgres:17` in Docker for prod-parity (PGlite's WASM was tried first but its concurrency story under Next.js HMR was too noisy). Tests still use in-memory PGlite because they don't have HMR — fastest setup, no Docker dependency for `npm test` / CI.
 
 ## Migrations workflow
 
