@@ -1,10 +1,8 @@
-import { readFileSync, mkdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 import { Pool } from "pg";
-import { PGlite } from "@electric-sql/pglite";
-import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
-import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { opportunities, users, statusHistory } from "../src/lib/db/schema";
 
 const STATUS_MAP: Record<string, string> = {
@@ -53,11 +51,11 @@ function parseCsvLine(line: string): string[] {
   return fields;
 }
 
-type AnyDb =
-  | ReturnType<typeof drizzlePg>
-  | ReturnType<typeof drizzlePglite>;
-
-async function ensureUser(db: AnyDb, userId: string, email: string) {
+async function ensureUser(
+  db: ReturnType<typeof drizzle>,
+  userId: string,
+  email: string
+) {
   const existing = await db
     .select()
     .from(users)
@@ -89,19 +87,15 @@ async function main() {
   }
 
   const databaseUrl = process.env.DATABASE_URL;
-  let db: AnyDb;
-  let cleanup: () => Promise<void>;
-
-  if (databaseUrl) {
-    const pool = new Pool({ connectionString: databaseUrl });
-    db = drizzlePg(pool);
-    cleanup = () => pool.end();
-  } else {
-    mkdirSync("./data/pglite", { recursive: true });
-    const client = new PGlite("./data/pglite");
-    db = drizzlePglite(client);
-    cleanup = () => client.close();
+  if (!databaseUrl) {
+    console.error(
+      "DATABASE_URL is not set. For local dev, run `docker compose up -d` first."
+    );
+    process.exit(1);
   }
+
+  const pool = new Pool({ connectionString: databaseUrl });
+  const db = drizzle(pool);
 
   await ensureUser(db, userId, `${userId}@import`);
 
@@ -162,7 +156,7 @@ async function main() {
     );
   }
 
-  await cleanup();
+  await pool.end();
   console.log(
     `\nDone! Imported ${imported} opportunities, skipped ${skipped}.`
   );

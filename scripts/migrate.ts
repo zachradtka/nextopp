@@ -1,39 +1,31 @@
 /**
- * Apply pending Drizzle migrations from ./drizzle.
+ * Apply pending Drizzle migrations from ./drizzle against the Postgres at
+ * DATABASE_URL. Used in three contexts:
  *
- * Routing:
- *   - DATABASE_URL set → node-postgres against that URL (Neon in prod/preview)
- *   - DATABASE_URL unset → file-backed PGlite at ./data/pglite (local dev)
+ *   - Local dev: DATABASE_URL points at the Docker Postgres in
+ *     docker-compose.yml (the `dev` npm script runs this before next dev).
+ *   - Vercel build: DATABASE_URL points at the Neon branch for this deploy.
+ *   - Manual prod runs: when adding a one-off migration.
  */
 
-import { mkdirSync } from "node:fs";
-import { PGlite } from "@electric-sql/pglite";
-import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
-import { migrate as migratePglite } from "drizzle-orm/pglite/migrator";
-import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
-import { migrate as migratePg } from "drizzle-orm/node-postgres/migrator";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
-
-const LOCAL_PGLITE_DIR = "./data/pglite";
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
-  const migrationsFolder = "./drizzle";
-
-  if (databaseUrl) {
-    const pool = new Pool({ connectionString: databaseUrl });
-    const db = drizzlePg(pool);
-    await migratePg(db, { migrationsFolder });
-    await pool.end();
-    console.log("Migrations applied to Postgres at DATABASE_URL.");
-  } else {
-    mkdirSync(LOCAL_PGLITE_DIR, { recursive: true });
-    const client = new PGlite(LOCAL_PGLITE_DIR);
-    const db = drizzlePglite(client);
-    await migratePglite(db, { migrationsFolder });
-    await client.close();
-    console.log(`Migrations applied to local PGlite at ${LOCAL_PGLITE_DIR}.`);
+  if (!databaseUrl) {
+    console.error(
+      "DATABASE_URL is not set. For local dev, run `docker compose up -d` first."
+    );
+    process.exit(1);
   }
+
+  const pool = new Pool({ connectionString: databaseUrl });
+  const db = drizzle(pool);
+  await migrate(db, { migrationsFolder: "./drizzle" });
+  await pool.end();
+  console.log("Migrations applied.");
 }
 
 main().catch((err) => {

@@ -1,27 +1,17 @@
-import { mkdirSync } from "node:fs";
-import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
-import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
+import { drizzle } from "drizzle-orm/node-postgres";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { PgliteDatabase } from "drizzle-orm/pglite";
 import { Pool } from "pg";
-import { PGlite } from "@electric-sql/pglite";
 import * as schema from "./schema";
 
-export type DB =
-  | NodePgDatabase<typeof schema>
-  | PgliteDatabase<typeof schema>;
-
-const LOCAL_PGLITE_DIR = "./data/pglite";
+export type DB = NodePgDatabase<typeof schema>;
 
 function createDb(): DB {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (databaseUrl) {
-    const pool = new Pool({ connectionString: databaseUrl });
-    return drizzlePg(pool, { schema });
-  }
-  mkdirSync(LOCAL_PGLITE_DIR, { recursive: true });
-  const client = new PGlite(LOCAL_PGLITE_DIR);
-  return drizzlePglite(client, { schema });
+  // `pg.Pool` is lazy — it doesn't open a connection until the first query.
+  // That lets `next build`'s page-data-collection import this module without
+  // a live DB. If DATABASE_URL is actually missing at query time, the Pool
+  // will surface a clear ECONNREFUSED.
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  return drizzle(pool, { schema });
 }
 
 const globalForDb = globalThis as unknown as { __db?: DB };
@@ -31,4 +21,3 @@ export const db: DB = globalForDb.__db ?? createDb();
 if (process.env.NODE_ENV !== "production") {
   globalForDb.__db = db;
 }
-

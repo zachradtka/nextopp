@@ -7,19 +7,22 @@ Job opportunity tracking web app. Open source, single-user (multi-user planned �
 ## Quick Reference
 
 ```bash
-npm run dev          # Start dev server (uses local PGlite at ./data/pglite)
+npm run dev          # Start Docker Postgres, apply pending migrations, then `next dev`
+npm run db:down      # Stop the local Postgres container
 npm run build        # Production build
 npm run db:generate  # Generate a migration SQL file from schema changes
-npm run db:migrate   # Apply pending migrations (PGlite locally, Postgres via DATABASE_URL)
+npm run db:migrate   # Apply pending migrations to DATABASE_URL
 npm run db:studio    # Browse data with Drizzle Studio
 npm run import -- <csv> <user-id>  # Import opportunities from CSV
 npm run email        # Preview email templates at http://localhost:3001
+npm test             # Run vitest (uses in-memory PGlite — no Docker needed)
 ```
 
 ## Architecture
 
 - **Framework**: Next.js 16 (App Router, Server Components, Server Actions)
-- **Database**: Postgres. Local dev uses [PGlite](https://pglite.dev) (file-backed at `./data/pglite`); production/preview uses Postgres on Neon via the Vercel-Neon integration (`DATABASE_URL`). The runtime client in `src/lib/db/index.ts` switches based on `DATABASE_URL`.
+- **Database**: Postgres. Local dev runs a `postgres:16` container via [docker-compose.yml](docker-compose.yml); production and preview use Postgres on Neon via the Vercel-Neon integration (`DATABASE_URL`). The runtime client in `src/lib/db/index.ts` always uses `node-postgres` (`pg.Pool`) — same driver against either backend.
+- **Tests**: [in-memory PGlite](https://pglite.dev) (a WASM build of Postgres) — `npm test` doesn't need Docker. Real Postgres semantics, no separate service to manage.
 - **ORM**: Drizzle — schema in `src/lib/db/schema.ts`, client in `src/lib/db/index.ts`. Migrations live in `drizzle/` and are checked into the repo.
 - **Auth**: Auth.js (NextAuth v5) with GitHub, Google, LinkedIn OAuth + email magic link — disabled by default via `AUTH_DISABLED=true`
 - **Styling**: Tailwind CSS v4 + shadcn/ui (uses `@base-ui/react`, NOT Radix — no `asChild` prop)
@@ -35,7 +38,7 @@ npm run email        # Preview email templates at http://localhost:3001
 - Auth providers are configured dynamically — only providers with env vars set appear on the sign-in page
 - Email magic link requires `AUTH_RESEND_KEY` (Resend API key) and optionally `AUTH_EMAIL_FROM`
 - Next.js 16 uses `proxy.ts` instead of `middleware.ts`
-- Drizzle dialect is `postgresql`. Use `db:generate` + `db:migrate` (never `db:push`) so PR-branch Neon DBs get the same SQL the operator's local PGlite gets.
+- Drizzle dialect is `postgresql`. Use `db:generate` + `db:migrate` (never `db:push`) so PR-branch Neon DBs get the same SQL the operator's local Postgres gets.
 - Timestamps marshal as ISO strings (`mode: "string"` on the schema); auth-adapter columns (`emailVerified`, `expires`) use `mode: "date"` because the Auth.js adapter sends Date objects.
 - Feature flags (gating unbuilt pages) are defined in `src/lib/flags.ts` — add new flags there; see `docs/adr/0001-vercel-flags-sdk-over-env-checks.md`
 
@@ -43,13 +46,13 @@ npm run email        # Preview email templates at http://localhost:3001
 
 - **Single-user for now**: No `userId` on opportunities table. Multi-user support is planned (issue #1) but deferred.
 - **Statuses as enums, not a DB table**: Small fixed set, UI needs the metadata in code anyway. Simpler queries, no joins.
-- **Postgres everywhere, PGlite for local**: See [ADR-0003](docs/adr/0003-postgres-on-neon-for-full-text-search.md). Production runs Neon Postgres; local dev runs PGlite (a WASM build of Postgres bundled into the app process) at `./data/pglite/`. Zero-config dev — no Docker, no separate DB service. PGlite ships real Postgres extensions (`pg_trgm`, `btree_gin`) compiled to WASM, so behavior matches Neon closely.
+- **Docker Postgres locally, Neon in prod, PGlite for tests**: See [ADR-0003](docs/adr/0003-postgres-on-neon-for-full-text-search.md). Production and preview run on Neon. Local dev runs `postgres:16` in Docker for prod-parity (PGlite's WASM was tried first but its concurrency story under Next.js HMR was too noisy). Tests still use in-memory PGlite because they don't have HMR — fastest setup, no Docker dependency for `npm test` / CI.
 
 ## Migrations workflow
 
 1. Edit the schema in `src/lib/db/schema.ts`.
 2. Run `npm run db:generate` — Drizzle Kit diffs the schema against the last migration in `drizzle/` and writes a new `NNNN_*.sql` file. Commit it.
-3. Run `npm run db:migrate` — applies any pending migrations to your local PGlite at `./data/pglite/`. With `DATABASE_URL` set, it targets that Postgres instead.
+3. `npm run dev` applies pending migrations to the local Docker Postgres on startup. To apply manually: `npm run db:migrate`.
 
 The Vercel build runs `npm run db:migrate` against the per-environment `DATABASE_URL` so preview branches and production both pick up new migrations automatically.
 

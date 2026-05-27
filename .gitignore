@@ -34,8 +34,6 @@ yarn-error.log*
 .env*
 !.env.example
 
-# local PGlite database
-/data
 
 # claude code
 .claude/
