@@ -4,6 +4,8 @@ One-shot, idempotent copy of every row from the production Turso database to the
 
 The script lives at [scripts/migrate-turso-to-neon.ts](migrate-turso-to-neon.ts). Transformation logic is unit-tested in [scripts/lib/migrate-transform.test.ts](lib/migrate-transform.test.ts).
 
+> **Status — cutover completed 2026-05-28 (PR #120, see #100).** Production runs on Neon. Merging PR #120 was itself the cutover (Vercel auto-deploy), so the "trigger a redeploy" framing in step 6 is historical. `TURSO_*` env vars have been removed from Vercel production. The Turso DB is retained as a rollback target until decommissioned — see #121. The steps below are kept as the execution record.
+
 ## Prerequisites
 
 - Both databases reachable from your laptop:
@@ -43,13 +45,15 @@ This is the order to run things on cutover day. Reproduces the cadence from issu
 
 ### 1. Backup Turso
 
+Requires a logged-in CLI session. On WSL2 the normal `turso auth login` fails to open a browser (DBus/UPower/GPU errors) — use `turso auth login --headless`, open the printed URL in your Windows browser, and paste the token back.
+
 ```bash
 mkdir -p backups
-turso db dump <prod-db-name> > "backups/turso-prod-$(date +%Y%m%d-%H%M).dump"
-ls -lh backups/   # confirm non-zero size
+turso db export <prod-db-name> --output-file "backups/turso-prod-$(date +%Y%m%d-%H%M).db"
+ls -lh backups/   # confirm non-zero size (writes <name>.db + <name>.db-wal)
 ```
 
-Keep the dump for at least 1 week before decommissioning Turso.
+`turso db export` writes a native SQLite file (plus a `.db-wal` sidecar), not a SQL text dump — open it with `sqlite3` or restore via `turso db import` if ever needed. Keep the export for at least 1 week before decommissioning Turso.
 
 ### 2. Stop using the app for ~15 minutes
 
@@ -107,11 +111,11 @@ SELECT email, "emailVerified" FROM users WHERE "emailVerified" IS NOT NULL LIMIT
 
 In Vercel **Settings → Environment Variables → Production**:
 
-- Remove `TURSO_DATABASE_URL`
-- Remove `TURSO_AUTH_TOKEN`
+- Remove `TURSO_DATABASE_URL` — *done during #100 finalization*
+- Remove `TURSO_AUTH_TOKEN` — *done during #100 finalization*
 - Confirm `DATABASE_URL` is set (Vercel-Neon integration injects it)
 
-Trigger a production redeploy. The newly deployed runtime reads from Neon.
+The actual cutover happened when PR #120 merged (Vercel auto-deploy), not via this env swap — removing the inert `TURSO_*` vars is hygiene, not the cutover trigger. The runtime already reads from Neon.
 
 > Preview env vars are NOT touched — those stay on Neon branches per #99.
 
@@ -128,14 +132,14 @@ In a small follow-up commit (or as part of the cutover PR):
 
 ### 9. Wait 1 week, then decommission Turso
 
-Delete the Turso production DB from the Turso dashboard. Optionally remove the dump from `backups/` if disk pressure matters.
+Tracked separately in **#121** (do not start before ~2026-06-04). Deletes the Turso prod DB, archives the local export, removes the now-dead migration script + `@libsql/client`, and retires this runbook.
 
 ## Rollback
 
 If smoke-testing in step 7 reveals breakage:
 
-1. In Vercel **Settings → Environment Variables → Production**, re-add `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`. **Note:** the merged code (post-PR #120) does NOT read these any more — see the rollback path below.
+1. In Vercel **Settings → Environment Variables → Production**, re-add `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` from your saved credentials. **Note:** these were removed during #100 finalization, and the merged code (post-PR #120) does NOT read them anyway — they're only needed once the revert below restores the libsql code path.
 2. Revert PR #120 (`git revert <merge-sha>` and push to main) — Vercel auto-deploys the revert, which restores the libsql code path that reads `TURSO_*`.
 3. Production is now back on the untouched Turso DB. The Neon data is left in place — re-running this migration script is the path forward when you're ready to retry.
 
-If you reach the 1-week decommission point without rollback, delete the Turso DB and remove the rollback paragraph from this doc.
+Once #121 closes (Turso decommissioned), this rollback path is gone for good.
