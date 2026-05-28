@@ -115,7 +115,7 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
   const sidebarActions = (
     <OpportunitySidebarActions
       id={opportunity.id}
-      archived={opportunity.archived === 1}
+      archived={opportunity.archived}
     />
   );
 

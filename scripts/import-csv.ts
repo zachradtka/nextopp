@@ -1,8 +1,8 @@
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { opportunities, users, statusHistory } from "../src/lib/db/schema";
 
 const STATUS_MAP: Record<string, string> = {
@@ -80,23 +80,28 @@ async function main() {
     console.error(
       "Usage: npx tsx scripts/import-csv.ts <path-to-csv> <user-id>"
     );
-    console.error("Example: npx tsx scripts/import-csv.ts data.csv local-dev-user");
+    console.error(
+      "Example: npx tsx scripts/import-csv.ts data.csv local-dev-user"
+    );
     process.exit(1);
   }
 
-  const url = process.env.TURSO_DATABASE_URL;
-  const authToken = process.env.TURSO_AUTH_TOKEN;
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.error(
+      "DATABASE_URL is not set. For local dev, run `docker compose up -d` first."
+    );
+    process.exit(1);
+  }
 
-  const client = createClient(
-    url ? { url, authToken } : { url: "file:local.db" }
-  );
-  const db = drizzle(client);
+  const pool = new Pool({ connectionString: databaseUrl });
+  const db = drizzle(pool);
 
   await ensureUser(db, userId, `${userId}@import`);
 
   const csv = readFileSync(csvPath, "utf-8");
   const lines = csv.split("\n").filter((l) => l.trim());
-  const [_header, ...rows] = lines;
+  const [, ...rows] = lines;
 
   let imported = 0;
   let skipped = 0;
@@ -113,8 +118,7 @@ async function main() {
     ] = parseCsvLine(line);
 
     const mappedStatus = STATUS_MAP[status.toLowerCase()] ?? "saved";
-    const mappedWorkMode =
-      WORK_MODE_MAP[workMode.toLowerCase()] ?? null;
+    const mappedWorkMode = WORK_MODE_MAP[workMode.toLowerCase()] ?? null;
     const now = new Date().toISOString();
 
     if (!company) {
@@ -136,7 +140,7 @@ async function main() {
       appliedAt: parseDate(applicationDate),
       createdAt: now,
       updatedAt: now,
-      archived: 0,
+      archived: false,
     });
 
     await db.insert(statusHistory).values({
@@ -152,6 +156,7 @@ async function main() {
     );
   }
 
+  await pool.end();
   console.log(
     `\nDone! Imported ${imported} opportunities, skipped ${skipped}.`
   );
