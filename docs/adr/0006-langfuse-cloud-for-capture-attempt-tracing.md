@@ -19,9 +19,13 @@ The goal is twofold: (1) inspect any given Capture attempt end-to-end after the 
 - Prompts stay in source. Each prompt has a sibling `CAPTURE_PROMPT_VERSION` constant; on every meaningful prompt change we bump the version and pass it as Langfuse metadata. We deliberately do not use Langfuse Prompt Management — keeping prompts in PRs preserves reviewability and atomicity with code changes, at the cost of needing a redeploy to change a prompt.
 - The `userId` sent to Langfuse is the opaque Account id (Auth.js `users.id`), never the **Primary email**. Same identifier used everywhere else for cross-system correlation.
 
-## Privacy boundary, deferred
+## Privacy boundary (resolved for public launch)
 
-Traces capture the full pasted text and the full extracted JSON. This is appropriate while the app is single-user (the only user is the trace owner), but is a privacy disclosure that must be made before public launch — pasted job descriptions can contain personal notes the user did not intend to share with a third-party SaaS. Before opening sign-ups beyond `ALLOWED_USERS`, this ADR is revisited and one of the following must be in place: (a) per-user opt-in toggle "help improve Capture" gating full-content traces, (b) truncation + hashing for non-opted-in users, or (c) self-hosting Langfuse to keep data in our infrastructure. Tracked as a follow-up; not blocking the initial wire-up.
+Traces originally captured the full pasted text and the full extracted JSON — appropriate only while the single user *is* the trace owner. Pasted job descriptions carry personal notes (referrals, salary expectations, reasons for leaving), so shipping them to a third-party SaaS is a personal-data disclosure that cannot stand once strangers sign up.
+
+Resolved before opening sign-ups: traces default to **metadata only** — `userId`, source type, model, prompt version, error code, `durationMs` — and never include pasted text or extracted JSON. A per-**Account** opt-in toggle ("help improve Capture", default off) is the *only* path by which full content is retained, and only for Accounts that explicitly enable it. Metadata alone still drives the failure-rate alerting this ADR exists for; full-content replay becomes a consented extra rather than the default. Account deletion must purge any opted-in content held in Langfuse (see the data-lifecycle work).
+
+Rejected at decision time: truncation + hashing for non-opted users (a truncated job description is still partial personal data and muddies the consent story), and self-hosting Langfuse (real ops burden for a solo operator, and it still leaves the disclosure and deletion duties intact).
 
 ## Out of scope
 

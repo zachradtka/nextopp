@@ -2,7 +2,7 @@
 
 # NextOpp
 
-Job opportunity tracking web app. Open source, single-user (multi-user planned — see issue #1).
+Job opportunity tracking web app. Open source and multi-tenant — every Account owns its own private Opportunities; ownership never crosses Accounts (see [CONTEXT.md](CONTEXT.md)).
 
 ## Quick Reference
 
@@ -44,7 +44,7 @@ npm test             # Run vitest (uses in-memory PGlite — no Docker needed)
 
 ## Project Decisions
 
-- **Single-user for now**: No `userId` on opportunities table. Multi-user support is planned (issue #1) but deferred.
+- **Multi-tenant**: every Opportunity is scoped to its owning Account via `opportunities.user_id` (NOT NULL, FK to `users.id`); all queries in `src/lib/actions/` filter by the session user. Tenant isolation is being hardened with Postgres Row-Level Security — see [ADR-0007](docs/adr/0007-row-level-security-for-tenant-isolation.md).
 - **Statuses as enums, not a DB table**: Small fixed set, UI needs the metadata in code anyway. Simpler queries, no joins.
 - **Docker Postgres locally, Neon in prod, PGlite for tests**: See [ADR-0003](docs/adr/0003-postgres-on-neon-for-full-text-search.md). Production and preview run on Neon. Local dev runs `postgres:17` in Docker for prod-parity (PGlite's WASM was tried first but its concurrency story under Next.js HMR was too noisy). Tests still use in-memory PGlite because they don't have HMR — fastest setup, no Docker dependency for `npm test` / CI.
 

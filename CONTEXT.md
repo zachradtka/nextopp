@@ -64,6 +64,18 @@ _Avoid_: connection, identity (overloaded — see Flagged ambiguities), social a
 The **Account**'s anchor email. Set at signup from whichever provider was used first, and locked thereafter (changing it is a deferred feature). Used as the magic-link delivery target, as the address checked against `ALLOWED_USERS`, and as the user-visible "main" email in the UI. Other **Linked accounts** may claim different emails — those are stored on the **Linked account** row but never surface as the Account's primary identifier.
 _Avoid_: account email, main email
 
+**Plan**:
+The subscription tier an **Account** is on — `Free` or `Pro`. A **Plan** governs exactly one thing: the **Account**'s **Capture allowance**. Every **Plan**, including Free, has unlimited **Opportunities**, **Import**, search, and tracking — only **Capture** is gated by **Plan**.
+_Avoid_: tier (acceptable in code, but **Plan** in copy), subscription, level
+
+**Capture allowance**:
+The number of successful **Captures** an **Account** may make per month, set by its **Plan**. Only a successful **Capture attempt** (one that returns usable data) decrements the allowance; a failed attempt does not, because the user received nothing. Distinct from the **Capture rate limit**.
+_Avoid_: quota, credits (we are not usage-credit priced), limit
+
+**Capture rate limit**:
+A ceiling on **Capture attempts** — successful or failed — over a short window, applied per **Account** to cap operator cost (every attempt incurs LLM and/or Firecrawl spend regardless of outcome). Orthogonal to the **Capture allowance**: the allowance is a fairness budget for the user, the rate limit is a safety budget for the operator.
+_Avoid_: throttle, quota
+
 ## Relationships
 
 - An **Opportunity** enters the system one of three ways: manual field entry, **Capture**, or **Import**.
@@ -76,6 +88,8 @@ _Avoid_: account email, main email
 - A **Qualifier** composes inside either a **Global search** or **Page search**: typing `company:micro` works the same way in both.
 - An **Account** owns its **Opportunities** outright; ownership never crosses Accounts (no shared, no transferred).
 - An **Account** has exactly one **Primary email** and zero or more **Linked accounts**; signing in via any **Linked account** lands the person in the same **Account**.
+- An **Account** is on exactly one **Plan** at a time; the **Plan** sets its **Capture allowance**.
+- A successful **Capture attempt** decrements the **Account**'s **Capture allowance**; a failed **Capture attempt** does not. Both successful and failed attempts count toward the **Capture rate limit**.
 
 ## Example dialogue
 
